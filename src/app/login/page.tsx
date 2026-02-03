@@ -7,6 +7,8 @@ import { LoginForm } from '@/components/auth/login-form';
 import { SignUpForm } from '@/components/auth/signup-form';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function LoginPage() {
   return (
@@ -59,6 +61,28 @@ export default function LoginPage() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          <Alert className="mt-6">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Demo Accounts</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">To test the application, first go to the <strong>Sign Up</strong> tab and create the following accounts:</p>
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                <li><strong>Admin Account:</strong>
+                  <br />- Name: `ADMIN`
+                  <br />- Email: `admin@example.com`
+                  <br />- Password: `admin123`
+                </li>
+                <li><strong>User Account:</strong>
+                  <br />- Name: `USER`
+                  <br />- Email: `user@example.com`
+                  <br />- Password: `user123`
+                </li>
+              </ul>
+               <p className="mt-2">After signing up, you can log in with these credentials.</p>
+            </AlertDescription>
+          </Alert>
+
         </div>
       </div>
     </main>

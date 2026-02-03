@@ -57,7 +57,7 @@ export function SignUpForm() {
 
       setDocumentNonBlocking(userDocRef, {
         id: user.uid,
-        username: values.email.split('@')[0],
+        username: values.name,
         firstName: firstName || '',
         lastName: lastName.join(' ') || '',
         email: user.email,

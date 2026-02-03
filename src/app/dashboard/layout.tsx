@@ -1,25 +1,52 @@
-import { AppHeader } from '@/components/layout/app-header';
-import { AppSidebar } from '@/components/layout/app-sidebar';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { AppBottomNav } from '@/components/layout/app-bottom-nav';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser, useAuth } from '@/firebase';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <SidebarProvider>
-      <AppSidebar />
-      <div className="md:hidden">
-        <AppBottomNav />
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const auth = useAuth();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading...</p>
       </div>
-      <SidebarInset>
-        <div className="flex flex-col min-h-screen">
-          <AppHeader />
-          <main className="flex-1 p-4 md:p-6 md:pb-6 pb-24">{children}</main>
+    );
+  }
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/login');
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="container flex h-16 items-center justify-between">
+          <Link href="/dashboard" className="font-bold">
+            SMSWIN User
+          </Link>
+          <Button variant="outline" onClick={handleLogout}>
+            Logout
+          </Button>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
+      </header>
+      <main className="flex-1">{children}</main>
+    </div>
   );
 }

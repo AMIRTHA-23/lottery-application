@@ -5,11 +5,11 @@ import { LayoutGrid, Users, Dice5, BarChart2, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/dashboard/users', label: 'Users', icon: Users },
-  { href: '/dashboard/control', label: 'Control', icon: Dice5 },
-  { href: '/dashboard/reports', label: 'Reports', icon: BarChart2 },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/control', label: 'Control', icon: Dice5 },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart2 },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AppBottomNav() {

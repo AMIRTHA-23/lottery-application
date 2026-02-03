@@ -18,18 +18,27 @@ import {
   LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/firebase';
+
 
 const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/dashboard/users', label: 'Users', icon: Users },
-  { href: '/dashboard/control', label: 'Control', icon: Dice5 },
-  { href: '/dashboard/reports', label: 'Reports', icon: BarChart2 },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/admin', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/control', label: 'Control', icon: Dice5 },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart2 },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/');
+  };
 
   return (
     <Sidebar>
@@ -60,11 +69,9 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Logout">
-              <Link href="/">
-                <LogOut />
-                <span>Logout</span>
-              </Link>
+            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+              <LogOut />
+              <span>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

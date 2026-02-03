@@ -15,6 +15,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -25,6 +28,9 @@ const formSchema = z.object({
 export function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,13 +40,45 @@ export function SignUpForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: 'Account Created',
-      description: "You're all set! Welcome to SMSWIN.",
-    });
-    router.push('/dashboard');
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      // 2. Update the user's profile with their name
+      await updateProfile(user, {
+        displayName: values.name,
+      });
+
+      // 3. Create a user document in Firestore
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const [firstName, ...lastName] = values.name.split(' ');
+
+      setDocumentNonBlocking(userDocRef, {
+        id: user.uid,
+        username: values.email.split('@')[0],
+        firstName: firstName || '',
+        lastName: lastName.join(' ') || '',
+        email: user.email,
+        phoneNumber: '',
+        registrationDate: new Date().toISOString(),
+      }, { merge: true });
+
+      toast({
+        title: 'Account Created',
+        description: "You're all set! Welcome to SMSWIN.",
+      });
+      router.push('/dashboard');
+
+    } catch (error: any) {
+      console.error("Sign up error:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: error.message || 'Could not create your account.',
+      });
+    }
   }
 
   return (

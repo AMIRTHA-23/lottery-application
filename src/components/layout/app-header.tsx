@@ -22,8 +22,8 @@ export function AppHeader() {
             <span className="sr-only">Toggle Menu</span>
         </Button>
         <div>
-          <h1 className="text-lg font-bold text-foreground tracking-wider">SMSWIN</h1>
-          <p className="text-xs text-green-400 font-semibold">VERIFIED SECURE</p>
+          <h1 className="text-lg font-semibold text-foreground">SMSWIN Dashboard</h1>
+          <p className="text-xs text-muted-foreground">Admin Control Panel</p>
         </div>
       </div>
       
@@ -44,7 +44,7 @@ export function AppHeader() {
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <div className="flex flex-col">
-                <span>Result for 4-Digit declared!</span>
+                <span>New user signed up!</span>
                 <span className="text-xs text-muted-foreground">5 minutes ago</span>
               </div>
             </DropdownMenuItem>

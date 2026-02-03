@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+
 export interface LotteryGame {
   id: string;
   name: string;
@@ -29,4 +31,27 @@ export interface LiveDraw {
   imageHint: string;
   countdown: string | null;
   isHot: boolean;
+}
+
+export interface AdminStat {
+  title: string;
+  value: string;
+  change: string;
+  changeType: 'increase' | 'decrease';
+  icon: LucideIcon;
+}
+
+export interface SalesChartData {
+  name: string;
+  sales: number;
+  payouts: number;
+}
+
+export interface GamePopularity {
+    id: string;
+    name: string;
+    type: string;
+    units: string;
+    progress: number;
+    color: string;
 }

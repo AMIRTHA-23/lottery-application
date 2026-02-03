@@ -11,24 +11,21 @@ import {
 } from '@/components/ui/sidebar';
 import {
   LayoutGrid,
-  Trophy,
-  Wallet,
-  User,
-  Ticket,
-  LogOut,
+  Users,
+  Dice5,
+  BarChart2,
   Settings,
-  History,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/dashboard/tickets', label: 'My Tickets', icon: Ticket },
-  { href: '/dashboard/results', label: 'Results', icon: Trophy },
-  { href: '/dashboard/history', label: 'History', icon: History },
-  { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/dashboard/profile', label: 'Profile', icon: User },
+  { href: '/dashboard/users', label: 'Users', icon: Users },
+  { href: '/dashboard/control', label: 'Control', icon: Dice5 },
+  { href: '/dashboard/reports', label: 'Reports', icon: BarChart2 },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -37,11 +34,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 p-2">
-          <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-foreground tracking-wider">SMSWIN</h1>
-            <p className="text-xs text-green-400 font-semibold">VERIFIED SECURE</p>
-          </div>
+        <div className="p-2">
+          <h1 className="text-lg font-semibold text-foreground">SMSWIN Dashboard</h1>
+          <p className="text-xs text-muted-foreground">Admin Control Panel</p>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -64,14 +59,6 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Settings">
-              <Link href="#">
-                <Settings />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Logout">
               <Link href="/">

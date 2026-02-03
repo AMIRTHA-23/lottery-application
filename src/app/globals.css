@@ -38,6 +38,11 @@ body {
     --sidebar-accent: 259 95% 66%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-ring: 259 95% 66%;
+    --chart-1: 259 95% 66%;
+    --chart-2: 240 5% 90%;
+    --chart-3: 142.1 76.2% 36.3%;
+    --chart-4: 22 91% 60%;
+    --chart-5: 0 84.2% 60.2%;
   }
 
   .dark {
@@ -68,6 +73,11 @@ body {
     --sidebar-accent: 217 91% 60%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 210 40% 98%;
+    --chart-3: 142.1 76.2% 36.3%;
+    --chart-4: 22 91% 60%;
+    --chart-5: 259 95% 66%;
   }
 }
 

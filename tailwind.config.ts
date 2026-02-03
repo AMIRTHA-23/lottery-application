@@ -56,8 +56,6 @@ export default {
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
-          light: "hsl(var(--success-light))",
-          "light-foreground": "hsl(var(--success-light-foreground))",
         },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

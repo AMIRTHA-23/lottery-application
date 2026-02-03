@@ -36,7 +36,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
           <Ticket className="w-8 h-8 text-primary" />
-          <span className="text-xl font-bold font-headline">SMSWIN</span>
+          <span className="text-xl font-bold font-headline">Lotto</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

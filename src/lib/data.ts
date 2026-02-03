@@ -33,9 +33,9 @@ export const walletTransactions: WalletTransaction[] = [
 ]
 
 export const user = {
-    name: "Sanjay P",
-    email: "sanjay@example.com",
-    avatarUrl: "https://picsum.photos/seed/avatar1/40/40",
-    walletBalance: 12345.67,
-    bankAccount: "********1234"
+    name: "John D.",
+    email: "john.d@example.com",
+    avatarUrl: "https://picsum.photos/seed/avatar-john/40/40",
+    walletBalance: 25000.00,
+    bankAccount: "********5678"
 }

@@ -36,7 +36,7 @@ export function LoginForm() {
     console.log(values);
     toast({
       title: 'Login Successful',
-      description: 'Welcome back!',
+      description: 'Welcome back to Lotto!',
     });
     router.push('/dashboard');
   }

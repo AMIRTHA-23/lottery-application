@@ -1,5 +1,5 @@
 "use client";
-import { Wallet, Bell, User as UserIcon, LogOut, LayoutGrid } from 'lucide-react';
+import { Wallet, Bell, User as UserIcon, LogOut, LayoutGrid, Search } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { user } from '@/lib/data';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import AnimatedCounter from '../shared/animated-counter';
+import { Input } from '../ui/input';
 
 export function AppHeader() {
   const { name, avatarUrl, walletBalance } = user;
@@ -24,7 +25,18 @@ export function AppHeader() {
       <div className="md:hidden">
         <SidebarTrigger />
       </div>
-      <div className="flex-1" />
+      <div className="w-full flex-1">
+        <form>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search games, results..."
+              className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+            />
+          </div>
+        </form>
+      </div>
       <div className="flex items-center gap-2 md:gap-4">
         <Link href="/dashboard/wallet" className="flex items-center gap-2 text-sm font-semibold p-2 rounded-md hover:bg-accent">
           <Wallet className="h-5 w-5 text-primary" />

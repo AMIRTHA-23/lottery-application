@@ -55,3 +55,29 @@ export interface GamePopularity {
     progress: number;
     color: string;
 }
+
+export interface Wallet {
+  id: string;
+  userId: string;
+  balance: number;
+  currency: string;
+}
+
+export interface LotteryNumber {
+  id: string;
+  userId: string;
+  lotteryEventId: string;
+  number: string;
+  purchaseDate: string;
+  unitPrice: number;
+  unitsPurchased: number;
+}
+
+export interface LotteryEvent {
+  id: string;
+  name: string;
+  eventDate: string;
+  result: string;
+  status: 'Open' | 'Closed' | 'Completed';
+  isEnabled: boolean;
+}

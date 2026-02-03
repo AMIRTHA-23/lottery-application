@@ -2,9 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useAuth } from '@/firebase';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { useUser } from '@/firebase';
+import { UserAppHeader } from '@/components/layout/user-app-header';
 
 export default function DashboardLayout({
   children,
@@ -13,7 +12,6 @@ export default function DashboardLayout({
 }) {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const auth = useAuth();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -24,29 +22,17 @@ export default function DashboardLayout({
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading...</p>
+        <div className="flex flex-col items-center gap-2">
+            <p>Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    router.push('/login');
-  };
-
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background">
-        <div className="container flex h-16 items-center justify-between">
-          <Link href="/dashboard" className="font-bold">
-            SMSWIN User
-          </Link>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </header>
-      <main className="flex-1">{children}</main>
+      <UserAppHeader />
+      <main className="flex-1 bg-muted/20">{children}</main>
     </div>
   );
 }

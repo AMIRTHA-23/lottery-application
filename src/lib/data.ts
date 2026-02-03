@@ -43,10 +43,10 @@ export const salesVsPayoutsData: SalesChartData[] = [
 ];
 
 export const gamePopularityData: GamePopularity[] = [
-    { id: '1d', name: '1D', type: '1D Lottery', units: '4,230 Units', progress: 45, color: 'bg-blue-500' },
-    { id: '2d', name: '2D', type: '2D Lottery', units: '8,150 Units', progress: 85, color: 'bg-orange-500' },
-    { id: '3d', name: '3D', type: '3D Lottery', units: '5,920 Units', progress: 60, color: 'bg-green-500' },
-    { id: '4d', name: '4D', type: '4D Lottery', units: '2,840 Units', progress: 30, color: 'bg-purple-500' },
+    { id: '1d', name: '1D', type: '1D Lottery', units: '4,230 Units', progress: 45, color: 'blue-500' },
+    { id: '2d', name: '2D', type: '2D Lottery', units: '8,150 Units', progress: 85, color: 'orange-500' },
+    { id: '3d', name: '3D', type: '3D Lottery', units: '5,920 Units', progress: 60, color: 'green-500' },
+    { id: '4d', name: '4D', type: '4D Lottery', units: '2,840 Units', progress: 30, color: 'purple-500' },
 ];
 
 export const user = {

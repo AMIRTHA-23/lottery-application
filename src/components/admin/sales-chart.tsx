@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Line,
-  LineChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from 'recharts';
+import { Line, LineChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { salesVsPayoutsData } from '@/lib/data';
 import {
   ChartConfig,
@@ -57,7 +51,11 @@ export function SalesChart() {
             tickFormatter={(value) => `$${value / 1000}k`}
           />
           <ChartTooltip
-            cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
+            cursor={{
+              stroke: 'hsl(var(--primary))',
+              strokeWidth: 1,
+              strokeDasharray: '3 3',
+            }}
             content={<ChartTooltipContent />}
           />
           <ChartLegend content={<ChartLegendContent />} />

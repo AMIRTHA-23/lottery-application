@@ -7,6 +7,7 @@ import {
 import { adminStats, gamePopularityData } from '@/lib/data';
 import { SalesChart } from '@/components/admin/sales-chart';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   return (
@@ -67,14 +68,29 @@ export default function DashboardPage() {
             <div key={game.id} className="space-y-2">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-md ${game.color.replace('bg-', 'bg-opacity-20 ')}`}>
-                    <span className={`text-lg font-bold ${game.color.replace('bg-','text-')}`}>{game.name}</span>
+                  <div
+                    className={cn(
+                      'flex items-center justify-center w-10 h-10 rounded-md',
+                      `bg-${game.color}/20`
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'text-lg font-bold',
+                        `text-${game.color}`
+                      )}
+                    >
+                      {game.name}
+                    </span>
                   </div>
                   <span className="font-medium">{game.type}</span>
                 </div>
                 <span className="font-semibold">{game.units}</span>
               </div>
-              <Progress value={game.progress} indicatorClassName={game.color} />
+              <Progress
+                value={game.progress}
+                indicatorClassName={`bg-${game.color}`}
+              />
             </div>
           ))}
         </CardContent>

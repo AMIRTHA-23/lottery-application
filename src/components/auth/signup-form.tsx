@@ -73,10 +73,17 @@ export function SignUpForm() {
 
     } catch (error: any) {
       console.error("Sign up error:", error);
+      let description = 'Could not create your account. Please try again.';
+      if (error.code === 'auth/email-already-in-use') {
+        description =
+          'This email is already registered. Please log in or use a different email.';
+      } else {
+        description = error.message || description;
+      }
       toast({
         variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: error.message || 'Could not create your account.',
+        title: 'Sign Up Failed',
+        description: description,
       });
     }
   }

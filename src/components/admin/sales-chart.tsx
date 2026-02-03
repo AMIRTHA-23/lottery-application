@@ -2,22 +2,45 @@
 
 import {
   Line,
-  LineChart as RechartsLineChart,
-  ResponsiveContainer,
+  LineChart,
   XAxis,
   YAxis,
-  Tooltip,
-  Legend,
   CartesianGrid,
 } from 'recharts';
 import { salesVsPayoutsData } from '@/lib/data';
-import { ChartTooltipContent } from '@/components/ui/chart';
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+
+const chartConfig = {
+  sales: {
+    label: 'Sales',
+    color: 'hsl(var(--chart-1))',
+  },
+  payouts: {
+    label: 'Payouts',
+    color: 'hsl(var(--chart-2))',
+  },
+} satisfies ChartConfig;
 
 export function SalesChart() {
   return (
     <div className="h-[350px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsLineChart data={salesVsPayoutsData}>
+      <ChartContainer config={chartConfig} className="w-full h-full">
+        <LineChart
+          data={salesVsPayoutsData}
+          margin={{
+            top: 5,
+            right: 10,
+            left: 10,
+            bottom: 5,
+          }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis
             dataKey="name"
@@ -33,32 +56,27 @@ export function SalesChart() {
             axisLine={false}
             tickFormatter={(value) => `$${value / 1000}k`}
           />
-          <Tooltip
+          <ChartTooltip
             cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
             content={<ChartTooltipContent />}
           />
-          <Legend
-            iconType="circle"
-            wrapperStyle={{
-              paddingTop: '20px',
-            }}
-          />
+          <ChartLegend content={<ChartLegendContent />} />
           <Line
             type="monotone"
             dataKey="sales"
-            stroke="hsl(var(--chart-1))"
+            stroke="var(--color-sales)"
             strokeWidth={2}
             dot={false}
           />
           <Line
             type="monotone"
             dataKey="payouts"
-            stroke="hsl(var(--chart-2))"
+            stroke="var(--color-payouts)"
             strokeWidth={2}
             dot={false}
           />
-        </RechartsLineChart>
-      </ResponsiveContainer>
+        </LineChart>
+      </ChartContainer>
     </div>
   );
 }

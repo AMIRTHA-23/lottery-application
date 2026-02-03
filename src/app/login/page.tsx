@@ -5,7 +5,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoginForm } from '@/components/auth/login-form';
 import { SignUpForm } from '@/components/auth/signup-form';
-import { Ticket } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -21,8 +20,7 @@ export default function LoginPage() {
           data-ai-hint="lottery app illustration"
         />
          <div className="relative z-20 flex items-center text-lg font-medium">
-            <Ticket className="mr-2 h-8 w-8" />
-            <span className="text-2xl font-bold">Lotto</span>
+            <span className="text-2xl font-bold">SMSWIN</span>
           </div>
           <div className="relative z-20 mt-auto">
             <blockquote className="space-y-2 rounded-lg bg-black/50 p-4">
@@ -37,8 +35,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-6">
             <Link href="/" className="inline-flex items-center gap-2 mb-2 text-primary">
-              <Ticket className="h-8 w-8" />
-              <span className="text-2xl font-bold font-headline">Lotto</span>
+              <span className="text-2xl font-bold font-headline">SMSWIN</span>
             </Link>
             <p className="text-muted-foreground">Welcome! Please enter your details.</p>
           </div>

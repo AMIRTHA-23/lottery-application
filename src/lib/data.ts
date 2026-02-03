@@ -1,4 +1,4 @@
-import type { LotteryGame, LotteryResult, WalletTransaction } from './types';
+import type { LotteryGame, LotteryResult, WalletTransaction, LiveDraw } from './types';
 
 export const games: LotteryGame[] = [
   { id: 'single', name: 'Single Digit', description: 'Guess one number to win.', digit: 1 },
@@ -33,9 +33,34 @@ export const walletTransactions: WalletTransaction[] = [
 ]
 
 export const user = {
-    name: "John D.",
-    email: "john.d@example.com",
-    avatarUrl: "https://picsum.photos/seed/avatar-john/40/40",
-    walletBalance: 25000.00,
-    bankAccount: "********5678"
+    name: "Winner",
+    email: "winner@example.com",
+    avatarUrl: "https://picsum.photos/seed/avatar-winner/40/40",
+    walletBalance: 2450.75,
+    bankAccount: "********5678",
+    lastWin: 500,
+    status: "Verified"
 }
+
+export const liveDraws: LiveDraw[] = [
+  {
+    id: 'ld1',
+    title: 'Dear Lottery Morning',
+    drawDate: '24 Oct, 2023',
+    prize: '₹1 Cr',
+    image: 'https://picsum.photos/seed/lottery1/400/200',
+    imageHint: 'lottery ticket',
+    countdown: '04:20:15',
+    isHot: true,
+  },
+  {
+    id: 'ld2',
+    title: 'Kerala Lottery',
+    drawDate: '24 Oct, 2023',
+    prize: '₹75 Lakh',
+    image: 'https://picsum.photos/seed/lottery2/400/200',
+    imageHint: 'lottery balls',
+    countdown: null,
+    isHot: false,
+  },
+];

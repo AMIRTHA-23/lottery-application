@@ -38,7 +38,7 @@ export function SignUpForm() {
     console.log(values);
     toast({
       title: 'Account Created',
-      description: "You're all set! Welcome to Lotto.",
+      description: "You're all set! Welcome to SMSWIN.",
     });
     router.push('/dashboard');
   }

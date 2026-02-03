@@ -19,3 +19,14 @@ export interface WalletTransaction {
   amount: number;
   type: 'credit' | 'debit';
 }
+
+export interface LiveDraw {
+  id: string;
+  title: string;
+  drawDate: string;
+  prize: string;
+  image: string;
+  imageHint: string;
+  countdown: string | null;
+  isHot: boolean;
+}

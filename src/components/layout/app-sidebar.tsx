@@ -17,13 +17,16 @@ import {
   Ticket,
   LogOut,
   Settings,
+  History,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/dashboard/tickets', label: 'My Tickets', icon: Ticket },
   { href: '/dashboard/results', label: 'Results', icon: Trophy },
+  { href: '/dashboard/history', label: 'History', icon: History },
   { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
 ];
@@ -35,8 +38,10 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
-          <Ticket className="w-8 h-8 text-primary" />
-          <span className="text-xl font-bold font-headline">Lotto</span>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold text-foreground tracking-wider">SMSWIN</h1>
+            <p className="text-xs text-green-400 font-semibold">VERIFIED SECURE</p>
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>

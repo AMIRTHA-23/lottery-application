@@ -38,12 +38,19 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Login Successful',
         description: 'Welcome back to SMSWIN!',
       });
-      router.push('/dashboard');
+      
+      // Admin/User redirection logic
+      if (userCredential.user.email === 'admin@example.com') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+
     } catch (error: any) {
       console.error('Login Error:', error);
       toast({

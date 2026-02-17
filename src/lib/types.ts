@@ -57,7 +57,7 @@ export interface GamePopularity {
 }
 
 export interface Wallet {
-  id: string;
+  id:string;
   userId: string;
   balance: number;
   currency: string;
@@ -80,4 +80,14 @@ export interface LotteryEvent {
   result: string;
   status: 'Open' | 'Closed' | 'Completed';
   isEnabled: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  registrationDate: string;
 }

@@ -15,12 +15,11 @@
  * Key Security Decisions:
  * - Strict Ownership: All user-specific collections and subcollections are only
  *   accessible by the authenticated owner.
- * - No User Listing: It is not possible to list all user documents in the
- *   /users collection, protecting user privacy.
+ * - Admin Access: A designated admin user (admin@example.com) has special
+ *   privileges to list all users and manage global lottery events.
  * - Public Events: The /lotteryEvents collection is publicly readable by anyone,
  *   including unauthenticated users, to display event information. Writes to this
- *   collection are disabled for clients and must be performed by a trusted
- *   backend service with admin privileges.
+ *   collection are restricted to admins.
  * - Denormalization for Authorization: User-specific subcollections contain a
  *   'userId' or 'walletId' field. These are validated on creation and made
  *   immutable on update to ensure relational integrity without costly `get()` calls.
@@ -49,6 +48,13 @@ service cloud.firestore {
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Verifies that the requesting user is an administrator.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'admin@example.com';
     }
 
     /**
@@ -132,19 +138,17 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
 
     /**
-     * @description Manages user profile documents. Only the owner can read, create,
-     *              update, or delete their own profile. Listing all users is forbidden.
+     * @description Manages user profile documents. Only the owner can manage their
+     *              own profile. Admins have read-only access to all profiles.
      * @path /users/{userId}
-     * @allow (create) An authenticated user creating their own user document:
-     *        `auth.uid == 'user_abc'`, `create /users/user_abc`
-     * @deny (read) An authenticated user trying to read another user's profile:
-     *       `auth.uid == 'user_123'`, `get /users/user_abc`
+     * @allow (get, list) Admins can read any user profile and list all users.
+     * @deny (list) Regular users cannot list all users.
      * @principle Enforces Self-Creation for the root user document and strict ownership
-     *            for all subsequent operations.
+     *            for all subsequent operations, with an exception for admin reads.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
       allow update: if isExistingOwner(userId) && isUserDataImmutable();
       allow delete: if isExistingOwner(userId);
@@ -206,26 +210,18 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages global lottery events. This data is public and can be read by
-     *              any client, authenticated or not. Writes are disabled for all clients.
+     * @description Manages global lottery events. This data is publicly readable.
+     *              Writes are restricted to administrators.
      * @path /lotteryEvents/{lotteryEventId}
-     * @allow (read) Any unauthenticated user reading event details:
-     *        `auth == null`, `get /lotteryEvents/event_123`
-     * @deny (create) Any authenticated user trying to create a new event:
-     *       `auth.uid == 'user_abc'`, `create /lotteryEvents/event_456`
-     * @principle Segregation of public read-only data. All writes must be handled by a
-     *            trusted server environment with admin privileges.
+     * @allow (read) Any unauthenticated user reading event details.
+     * @allow (write) Any administrator can create, update, or delete events.
+     * @deny (write) Regular users and unauthenticated users cannot modify events.
+     * @principle Segregation of public data from admin-managed data.
      */
     match /lotteryEvents/{lotteryEventId} {
       allow get: if true;
       allow list: if true;
-      // Writes are restricted. Only a backend service with admin privileges should
-      // be able to modify lottery events.
-      // TODO: Implement an admin check here if admins need to write from the client,
-      // e.g., `if get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists;`
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if isAdmin();
     }
   }
 }

@@ -20,25 +20,25 @@ export default function RulesPage() {
                                 <AccordionItem value="item-1">
                                     <AccordionTrigger>1. Choose a Game</AccordionTrigger>
                                     <AccordionContent>
-                                    Navigate to the "Play" section and select an active lottery event. We offer various game types like 1D, 2D, 3D, and 4D. Each event has a specific draw date and unit price.
+                                    First, head over to the "Play" section. Here you'll find all the currently active lottery events. We offer a variety of game types like 1D, 2D, 3D, and 4D. Each game has its own draw date and unit price, so you can pick the one that's right for you.
                                     </AccordionContent>
                                 </AccordionItem>
                                 <AccordionItem value="item-2">
                                     <AccordionTrigger>2. Select Your Number</AccordionTrigger>
                                     <AccordionContent>
-                                    Once you've selected an event, enter the number you wish to play. The number of digits must match the game type (e.g., a 4D game requires a 4-digit number).
+                                    After selecting an event, it's time to choose your lucky number! Enter the number you want to bet on. Make sure the number of digits matches the game type (for example, a 4D game needs a 4-digit number).
                                     </AccordionContent>
                                 </AccordionItem>
                                 <AccordionItem value="item-3">
                                     <AccordionTrigger>3. Purchase Units</AccordionTrigger>
                                     <AccordionContent>
-                                    Decide how many units of your chosen number you want to buy. The total cost will be calculated automatically based on the event's unit price. Ensure you have sufficient funds in your wallet.
+                                    Next, decide how many units of your chosen number you'd like to purchase. You can buy multiple units to increase your potential winnings. The total cost is calculated for you. Make sure you have enough funds in your wallet to cover the purchase.
                                     </AccordionContent>
                                 </AccordionItem>
                                 <AccordionItem value="item-4">
                                     <AccordionTrigger>4. Check the Results</AccordionTrigger>
                                     <AccordionContent>
-                                    After the draw date, visit the "Results" page to see the winning numbers. If your number matches, your winnings will be automatically credited to your wallet!
+                                    This is the exciting part! Once the draw date passes, go to the "Results" page to see the official winning numbers. If your number matches, you're a winner! Your winnings will be automatically added to your app wallet.
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
@@ -69,5 +69,3 @@ export default function RulesPage() {
         </div>
     );
 }
-
-    

@@ -133,7 +133,7 @@ export default function DashboardPage() {
             </div>
             
             {/* Right Column */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
                  <Card>
                     <CardHeader>
                         <CardTitle>My Wallet</CardTitle>
@@ -157,6 +157,36 @@ export default function DashboardPage() {
                         )}
                     </CardContent>
                 </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>How to Play</CardTitle>
+                        <CardDescription>A quick guide to start playing.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-4">
+                            <li className="flex items-start gap-3">
+                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                                <p className="text-sm text-muted-foreground">Go to the <Link href="/dashboard/play" className="font-semibold text-primary hover:underline">Play</Link> page to see active games.</p>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                                <p className="text-sm text-muted-foreground">Pick a game, choose your lucky number, and decide how many units to buy.</p>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                                <p className="text-sm text-muted-foreground">Confirm your purchase from your wallet balance.</p>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
+                                <p className="text-sm text-muted-foreground">Check the <Link href="/dashboard/results" className="font-semibold text-primary hover:underline">Results</Link> page after the draw to see if you've won!</p>
+                            </li>
+                        </ul>
+                        <Button asChild variant="secondary" className="mt-4 w-full">
+                            <Link href="/dashboard/rules">Read Full Game Rules</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
           </div>
         )}
@@ -165,5 +195,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

@@ -2,14 +2,15 @@
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { collection, query, where, limit, orderBy } from 'firebase/firestore';
-import type { Wallet, LotteryNumber, Announcement } from '@/lib/types';
+import { collection, query, limit, orderBy } from 'firebase/firestore';
+import type { Wallet, LotteryNumber, Announcement, Transaction } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Megaphone } from 'lucide-react';
+import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { AddFundsDialog } from '@/components/dashboard/add-funds-dialog';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -23,6 +24,28 @@ export default function DashboardPage() {
   }, [user, firestore]);
   const { data: wallets, isLoading: isWalletsLoading } = useCollection<Wallet>(walletQuery);
   const wallet = wallets?.[0];
+
+  // Query for user's transactions (for stats)
+  const transactionsQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !wallet) return null;
+    return query(collection(firestore, 'users', user.uid, 'wallets', wallet.id, 'transactions'));
+  }, [user, firestore, wallet]);
+  const { data: transactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    if (!transactions) {
+      return { totalWinnings: 0, totalSpent: 0 };
+    }
+    const totalWinnings = transactions
+      .filter((tx) => tx.type === 'Payout')
+      .reduce((acc, tx) => acc + tx.amount, 0);
+    const totalSpent = transactions
+      .filter((tx) => tx.type === 'Purchase')
+      .reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
+    return { totalWinnings, totalSpent };
+  }, [transactions]);
+
 
   // Query for user's recent lottery numbers
   const numbersQuery = useMemoFirebase(() => {
@@ -43,153 +66,175 @@ export default function DashboardPage() {
     return null;
   }
 
-  const isLoading = isWalletsLoading || isNumbersLoading || isAnnouncementsLoading;
+  const isLoading = isWalletsLoading || isNumbersLoading || isAnnouncementsLoading || isTransactionsLoading;
+  
+  const statCards = [
+    {
+        title: "Total Winnings",
+        value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalWinnings),
+        icon: TrendingUp
+    },
+    {
+        title: "Total Spent",
+        value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalSpent),
+        icon: TrendingDown
+    }
+  ]
 
   return (
     <>
     <AddFundsDialog isOpen={isAddFundsOpen} onOpenChange={setAddFundsOpen} />
-    <div className="container mx-auto p-4 md:p-6">
-      <div className="space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Welcome, {user.displayName || 'User'}!
-            </h1>
-            <p className="text-muted-foreground">
-              Here's your lottery dashboard. Good luck!
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/dashboard/play">Play Now</Link>
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome, {user.displayName || 'User'}!
+          </h1>
+          <p className="text-muted-foreground">
+            Here's your lottery dashboard. Good luck!
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/dashboard/play">Play Now</Link>
+        </Button>
+      </div>
+      
+       {/* Stat Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {isLoading ? (
+            <>
+                <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/><Skeleton className="h-8 w-full mt-2"/></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/></CardContent></Card>
+            </>
+        ) : (
+            <>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
+                        <WalletIcon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{wallet ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet.balance) : '₹0.00'}</div>
+                         <div className="flex gap-2 mt-2">
+                            <Button size="sm" onClick={() => setAddFundsOpen(true)}>Add Funds</Button>
+                            <Button size="sm" variant="outline" asChild><Link href="/dashboard/wallet">View History</Link></Button>
+                        </div>
+                    </CardContent>
+                </Card>
+                {statCards.map((stat) => (
+                <Card key={stat.title}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                        {stat.title}
+                    </CardTitle>
+                    <stat.icon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    </CardContent>
+                </Card>
+                ))}
+            </>
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Announcements</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {isAnnouncementsLoading ? <p>Loading...</p> : announcements && announcements.length > 0 ? (
+                    <div className="space-y-4">
+                        {announcements.map((item) => (
+                        <div key={item.id} className="flex items-start gap-4">
+                            <Megaphone className="h-5 w-5 text-primary mt-1"/>
+                            <div className='flex-1'>
+                                <p className="font-semibold">{item.title}</p>
+                                <p className="text-sm text-muted-foreground">{item.content}</p>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                    ) : (
+                    <p className="text-muted-foreground text-sm">No new announcements.</p>
+                    )}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Recent Numbers</CardTitle>
+                    <CardDescription>Your 5 most recently purchased numbers.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isNumbersLoading ? <p>Loading...</p> : lotteryNumbers && lotteryNumbers.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Number</TableHead>
+                            <TableHead>Event ID</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead className="text-right">Units</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {lotteryNumbers.map((num) => (
+                            <TableRow key={num.id}>
+                            <TableCell className="font-medium">{num.number}</TableCell>
+                            <TableCell className="text-muted-foreground truncate max-w-[100px]">{num.lotteryEventId}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{new Date(num.purchaseDate).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right">{num.unitsPurchased}</TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    ) : (
+                    <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                        <p className="text-muted-foreground">You haven't purchased any numbers yet.</p>
+                        <Button asChild className="mt-4">
+                        <Link href="/dashboard/play">Buy Your First Number</Link>
+                        </Button>
+                    </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
         
-        {isLoading ? (
-          <p>Loading your dashboard...</p>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Left Column */}
-            <div className="lg:col-span-2 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Announcements</CardTitle>
-                        <CardDescription>Latest updates and notices from the admin.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {announcements && announcements.length > 0 ? (
-                        <div className="space-y-4">
-                            {announcements.map((item) => (
-                            <div key={item.id} className="flex items-start gap-4">
-                                <Megaphone className="h-5 w-5 text-primary mt-1"/>
-                                <div className='flex-1'>
-                                    <p className="font-semibold">{item.title}</p>
-                                    <p className="text-sm text-muted-foreground">{item.content}</p>
-                                </div>
-                            </div>
-                            ))}
-                        </div>
-                        ) : (
-                        <p className="text-muted-foreground text-sm">No new announcements.</p>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>My Recent Numbers</CardTitle>
-                        <CardDescription>Your 5 most recently purchased numbers.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {lotteryNumbers && lotteryNumbers.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                            <TableRow>
-                                <TableHead>Number</TableHead>
-                                <TableHead>Event ID</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Units</TableHead>
-                            </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                            {lotteryNumbers.map((num) => (
-                                <TableRow key={num.id}>
-                                <TableCell className="font-medium">{num.number}</TableCell>
-                                <TableCell className="text-muted-foreground truncate max-w-[100px]">{num.lotteryEventId}</TableCell>
-                                <TableCell className="text-muted-foreground text-xs">{new Date(num.purchaseDate).toLocaleDateString()}</TableCell>
-                                <TableCell className="text-right">{num.unitsPurchased}</TableCell>
-                                </TableRow>
-                            ))}
-                            </TableBody>
-                        </Table>
-                        ) : (
-                        <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-                            <p className="text-muted-foreground">You haven't purchased any numbers yet.</p>
-                            <Button asChild className="mt-4">
-                            <Link href="/dashboard/play">Buy Your First Number</Link>
-                            </Button>
-                        </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-            
-            {/* Right Column */}
-            <div className="lg:col-span-1 space-y-6">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>My Wallet</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {wallet ? (
-                        <>
-                            <p className="text-4xl font-bold">
-                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: wallet.currency || 'INR' }).format(wallet.balance || 0)}
-                            </p>
-                             <div className="flex gap-2 mt-4">
-                                <Button onClick={() => setAddFundsOpen(true)}>Add Funds</Button>
-                                <Button variant="outline" asChild><Link href="/dashboard/wallet">View History</Link></Button>
-                            </div>
-                        </>
-                        ) : (
-                         <div className="text-center p-4 border-2 border-dashed rounded-lg">
-                            <p className="text-muted-foreground text-sm">No wallet found.</p>
-                            <Button className="mt-2" onClick={() => setAddFundsOpen(true)}>Make First Deposit</Button>
-                        </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>How to Play</CardTitle>
-                        <CardDescription>A quick guide to start playing.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="space-y-4">
-                            <li className="flex items-start gap-3">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
-                                <p className="text-sm text-muted-foreground">Go to the <Link href="/dashboard/play" className="font-semibold text-primary hover:underline">Play</Link> page to see active games.</p>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
-                                <p className="text-sm text-muted-foreground">Pick a game, choose your lucky number, and decide how many units to buy.</p>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
-                                <p className="text-sm text-muted-foreground">Confirm your purchase from your wallet balance.</p>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
-                                <p className="text-sm text-muted-foreground">Check the <Link href="/dashboard/results" className="font-semibold text-primary hover:underline">Results</Link> page after the draw to see if you've won!</p>
-                            </li>
-                        </ul>
-                        <Button asChild variant="secondary" className="mt-4 w-full">
-                            <Link href="/dashboard/rules">Read Full Game Rules</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
-          </div>
-        )}
+        {/* Right Column */}
+        <div className="lg:col-span-1 space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>How to Play</CardTitle>
+                    <CardDescription>A quick guide to start playing.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ul className="space-y-4">
+                        <li className="flex items-start gap-3">
+                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
+                            <p className="text-sm text-muted-foreground">Go to the <Link href="/dashboard/play" className="font-semibold text-primary hover:underline">Play</Link> page to see active games.</p>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
+                            <p className="text-sm text-muted-foreground">Pick a game, choose your lucky number, and decide how many units to buy.</p>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
+                            <p className="text-sm text-muted-foreground">Confirm your purchase from your wallet balance.</p>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
+                            <p className="text-sm text-muted-foreground">Check the <Link href="/dashboard/results" className="font-semibold text-primary hover:underline">Results</Link> page after the draw to see if you've won!</p>
+                        </li>
+                    </ul>
+                    <Button asChild variant="secondary" className="mt-4 w-full">
+                        <Link href="/dashboard/rules">Read Full Game Rules</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
     </>

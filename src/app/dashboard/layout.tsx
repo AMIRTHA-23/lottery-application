@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { UserAppHeader } from '@/components/layout/user-app-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { UserAppSidebar } from '@/components/layout/user-app-sidebar';
+import { UserAppBottomNav } from '@/components/layout/user-app-bottom-nav';
+
 
 export default function DashboardLayout({
   children,
@@ -33,11 +37,17 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <UserAppHeader />
-      <main className="flex-1 bg-muted/20">{children}</main>
-    </div>
+     <SidebarProvider>
+      <UserAppSidebar />
+      <div className="md:hidden">
+        <UserAppBottomNav />
+      </div>
+      <SidebarInset>
+        <div className="flex flex-col min-h-screen">
+          <UserAppHeader />
+          <main className="flex-1 bg-muted/20 p-4 md:p-6 md:pb-6 pb-24">{children}</main>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
-
-    

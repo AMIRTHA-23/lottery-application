@@ -20,10 +20,14 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DeclareWinnerDialog } from '@/components/admin/declare-winner-dialog';
 
 const createEventSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters long.' }),
   eventDate: z.date({ required_error: 'An event date is required.' }),
+  gameType: z.enum(['1D', '2D', '3D', '4D'], { required_error: 'Please select a game type.'}),
+  unitPrice: z.coerce.number().min(1, { message: 'Unit price must be at least 1.'}),
 });
 
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
@@ -31,6 +35,8 @@ type CreateEventFormValues = z.infer<typeof createEventSchema>;
 export default function ControlPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [selectedEvent, setSelectedEvent] = useState<LotteryEvent | null>(null);
+  const [isWinnerDialogOpen, setWinnerDialogOpen] = useState(false);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -43,6 +49,7 @@ export default function ControlPage() {
     resolver: zodResolver(createEventSchema),
     defaultValues: {
       name: '',
+      unitPrice: 10,
     },
   });
 
@@ -55,6 +62,8 @@ export default function ControlPage() {
       result: '',
       status: 'Open',
       isEnabled: true,
+      gameType: data.gameType,
+      unitPrice: data.unitPrice,
     };
 
     addDocumentNonBlocking(collection(firestore, 'lotteryEvents'), newEvent);
@@ -76,8 +85,15 @@ export default function ControlPage() {
     });
   }
 
+  const openDeclareWinnerDialog = (event: LotteryEvent) => {
+    setSelectedEvent(event);
+    setWinnerDialogOpen(true);
+  };
+
+
   return (
     <div className="space-y-6">
+      <DeclareWinnerDialog event={selectedEvent} isOpen={isWinnerDialogOpen} onOpenChange={setWinnerDialogOpen} />
       <h1 className="text-3xl font-bold tracking-tight">Game Control</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -92,6 +108,28 @@ export default function ControlPage() {
                 <Label htmlFor="name">Event Name</Label>
                 <Input id="name" placeholder="e.g., Daily Draw" {...form.register('name')} />
                 {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+              </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label>Game Type</Label>
+                    <Select onValueChange={(value) => form.setValue('gameType', value as '1D'|'2D'|'3D'|'4D')} defaultValue={form.getValues('gameType')}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="1D">1D</SelectItem>
+                            <SelectItem value="2D">2D</SelectItem>
+                            <SelectItem value="3D">3D</SelectItem>
+                            <SelectItem value="4D">4D</SelectItem>
+                        </SelectContent>
+                    </Select>
+                     {form.formState.errors.gameType && <p className="text-sm text-destructive">{form.formState.errors.gameType.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="unitPrice">Unit Price</Label>
+                    <Input id="unitPrice" type="number" placeholder="e.g., 10" {...form.register('unitPrice')} />
+                    {form.formState.errors.unitPrice && <p className="text-sm text-destructive">{form.formState.errors.unitPrice.message}</p>}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Event Date</Label>
@@ -131,7 +169,7 @@ export default function ControlPage() {
         <Card>
           <CardHeader>
             <CardTitle>Manage Events</CardTitle>
-            <CardDescription>Enable or disable ongoing lottery events.</CardDescription>
+            <CardDescription>Enable, disable, or declare winners for events.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -139,21 +177,30 @@ export default function ControlPage() {
                 <TableRow>
                   <TableHead>Event</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Enabled</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && <TableRow><TableCell colSpan={3} className="text-center">Loading events...</TableCell></TableRow>}
                 {!isLoading && events && events.map((event) => (
                   <TableRow key={event.id}>
-                    <TableCell className='font-medium'>{event.name}</TableCell>
-                    <TableCell><Badge variant={event.status === 'Open' ? 'success' : 'secondary'}>{event.status}</Badge></TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className='font-medium'>{event.name} <span className="text-xs text-muted-foreground">({event.gameType})</span></TableCell>
+                    <TableCell><Badge variant={event.status === 'Open' ? 'success' : event.status === 'Completed' ? 'default' : 'secondary'}>{event.status}</Badge></TableCell>
+                    <TableCell className="flex justify-end gap-2 items-center">
                        <Switch
                         checked={event.isEnabled}
                         onCheckedChange={() => handleToggleEnabled(event)}
                         aria-label="Toggle Event"
+                        disabled={event.status === 'Completed'}
                       />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => openDeclareWinnerDialog(event)}
+                        disabled={event.status !== 'Open' || !event.isEnabled}
+                      >
+                        Declare Result
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -172,3 +219,5 @@ export default function ControlPage() {
     </div>
   );
 }
+
+    

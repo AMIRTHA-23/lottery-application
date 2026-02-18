@@ -107,7 +107,7 @@
         },
         "unitPrice": {
           "type": "number",
-          "description": "The price of one unit of the lottery number."
+          "description": "The price of one unit of the lottery number at time of purchase."
         },
         "unitsPurchased": {
           "type": "number",
@@ -154,6 +154,15 @@
         "isEnabled": {
           "type": "boolean",
           "description": "A flag indicating if the lottery event is enabled or disabled for purchases."
+        },
+        "gameType": {
+          "type": "string",
+          "description": "The type of game (e.g., '1D', '2D', '3D', '4D').",
+          "enum": ["1D", "2D", "3D", "4D"]
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "The price per unit for a number in this lottery event."
         }
       },
       "required": [
@@ -162,7 +171,9 @@
         "eventDate",
         "result",
         "status",
-        "isEnabled"
+        "isEnabled",
+        "gameType",
+        "unitPrice"
       ]
     },
     "Transaction": {
@@ -205,6 +216,32 @@
         "type",
         "description"
       ]
+    },
+    "Announcement": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Announcement",
+      "type": "object",
+      "description": "Represents a global announcement from an admin.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the announcement."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the announcement."
+        },
+        "content": {
+          "type": "string",
+          "description": "The main content of the announcement."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date the announcement was created.",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "title", "content", "createdAt"]
     }
   },
   "auth": {
@@ -310,8 +347,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/announcements/{announcementId}",
+        "definition": {
+          "entityName": "Announcement",
+          "schema": {
+            "$ref": "#/backend/entities/Announcement"
+          },
+          "description": "Stores global announcements. Publicly readable. Write access restricted to admins.",
+          "params": [
+            {
+              "name": "announcementId",
+              "description": "The unique identifier of the announcement."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to provide a secure, scalable, and debuggable solution for the SMSWIN Lottery app. It prioritizes authorization independence by avoiding hierarchical dependencies and denormalizing authorization data. The structure is segregated to ensure homogeneous security postures within collections, and access is modeled consistently using path-based ownership for user-specific data.\n\n*   **Users Collection:** Stores user profiles. Access is restricted to the user themselves (path-based ownership).\n*   **Wallets Collection:** Stores user wallets, located under each user document for path-based ownership.\n*   **LotteryEvents Collection:** Stores global lottery event data.  Publicly readable, but write access restricted to admins.\n*   **LotteryNumbers Collection:** Stores lottery numbers purchased by users, located under each user document for path-based ownership. This facilitates easy retrieval of a user's purchased numbers.\n*   **Transactions Collection:** Stores transaction history for user wallets, located under each wallet document to provide proper separation of concerns, continuing the existing ownership hierarchy.\n\nThis structure ensures Authorization Independence by relying solely on `request.auth.uid` and avoiding `get()` calls in security rules.  It also supports the required QAPs by:\n\n*   **Path-Based Ownership:** Enforces clear ownership rules, making `list` operations secure and efficient, as users can only access their own data.\n*   **Segregation:** Separates user-specific data from global lottery event data, allowing for different security rules to be applied to each.\n\nThe use of hierarchical paths for user-owned data (e.g., `/users/{userId}/wallets/{walletId}`) ensures strong ownership-based security. Denormalization is employed by potentially including user id fields in nested collections where necessary to avoid complex `get()` calls in security rules."
+    "reasoning": "The Firestore data structure is designed to provide a secure, scalable, and debuggable solution for the SMSWIN Lottery app. It prioritizes authorization independence by avoiding hierarchical dependencies and denormalizing authorization data. The structure is segregated to ensure homogeneous security postures within collections, and access is modeled consistently using path-based ownership for user-specific data.\n\n*   **Users Collection:** Stores user profiles. Access is restricted to the user themselves (path-based ownership).\n*   **Wallets Collection:** Stores user wallets, located under each user document for path-based ownership.\n*   **LotteryEvents Collection:** Stores global lottery event data.  Publicly readable, but write access restricted to admins.\n*   **LotteryNumbers Collection:** Stores lottery numbers purchased by users, located under each user document for path-based ownership. This facilitates easy retrieval of a user's purchased numbers.\n*   **Transactions Collection:** Stores transaction history for user wallets, located under each wallet document to provide proper separation of concerns, continuing the existing ownership hierarchy.\n*   **Announcements Collection:** Stores global announcements. Publicly readable, write access restricted to admins.\n\nThis structure ensures Authorization Independence by relying solely on `request.auth.uid` and avoiding `get()` calls in security rules.  It also supports the required QAPs by:\n\n*   **Path-Based Ownership:** Enforces clear ownership rules, making `list` operations secure and efficient, as users can only access their own data.\n*   **Segregation:** Separates user-specific data from global and admin-only data, allowing for different security rules to be applied to each.\n\nThe use of hierarchical paths for user-owned data (e.g., `/users/{userId}/wallets/{walletId}`) ensures strong ownership-based security. Denormalization is employed by potentially including user id fields in nested collections where necessary to avoid complex `get()` calls in security rules."
   }
 }
+
+    

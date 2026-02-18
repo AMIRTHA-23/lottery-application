@@ -16,6 +16,7 @@ import {
   BarChart2,
   Settings,
   LogOut,
+  Megaphone,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,6 +28,7 @@ const menuItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/control', label: 'Control', icon: Dice5 },
   { href: '/admin/reports', label: 'Reports', icon: BarChart2 },
+  { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -54,7 +56,7 @@ export function AppSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={pathname.startsWith(item.href) && (item.href !== '/admin' || pathname === '/admin')}
                 tooltip={item.label}
               >
                 <Link href={item.href}>
@@ -79,3 +81,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    

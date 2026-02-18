@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { UserAppHeader } from '@/components/layout/user-app-header';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardLayout({
   children,
@@ -22,8 +23,10 @@ export default function DashboardLayout({
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-            <p>Loading your dashboard...</p>
+        <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-48 w-full" />
         </div>
       </div>
     );
@@ -36,3 +39,5 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+    

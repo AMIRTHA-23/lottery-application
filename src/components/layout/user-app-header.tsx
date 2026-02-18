@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth, useUser } from '@/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +13,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutGrid, LogOut, User as UserIcon } from 'lucide-react';
+import { LayoutGrid, LogOut, User as UserIcon, Wallet, Trophy, Ticket, BookOpen, LifeBuoy } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const navLinks = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/play", label: "Play" },
+    { href: "/dashboard/results", label: "Results" },
+    { href: "/dashboard/wallet", label: "Wallet" },
+]
 
 export function UserAppHeader() {
   const { user } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -35,15 +44,11 @@ export function UserAppHeader() {
         </Link>
         <div className="flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            <Link href="/dashboard" className="text-foreground transition-colors hover:text-foreground/80">
-              Dashboard
-            </Link>
-             <Link href="/dashboard/play" className="text-muted-foreground transition-colors hover:text-foreground/80">
-              Play
-            </Link>
-            <Link href="/dashboard/results" className="text-muted-foreground transition-colors hover:text-foreground/80">
-              Results
-            </Link>
+            {navLinks.map(link => (
+                 <Link key={link.href} href={link.href} className={cn("transition-colors hover:text-foreground/80", pathname === link.href ? "text-foreground" : "text-muted-foreground")}>
+                    {link.label}
+                </Link>
+            ))}
           </nav>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -72,6 +77,14 @@ export function UserAppHeader() {
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/rules')}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                <span>Game Rules</span>
+              </DropdownMenuItem>
+               <DropdownMenuItem onClick={() => router.push('/dashboard/support')}>
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                <span>Support</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
@@ -84,3 +97,5 @@ export function UserAppHeader() {
     </header>
   );
 }
+
+    

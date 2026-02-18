@@ -63,6 +63,15 @@ export interface Wallet {
   currency: string;
 }
 
+export interface Transaction {
+  id: string;
+  walletId: string;
+  transactionDate: string;
+  amount: number;
+  type: 'Deposit' | 'Withdrawal' | 'Purchase' | 'Payout';
+  description: string;
+}
+
 export interface LotteryNumber {
   id: string;
   userId: string;
@@ -80,6 +89,8 @@ export interface LotteryEvent {
   result: string;
   status: 'Open' | 'Closed' | 'Completed';
   isEnabled: boolean;
+  gameType: '1D' | '2D' | '3D' | '4D';
+  unitPrice: number;
 }
 
 export interface UserProfile {
@@ -91,3 +102,12 @@ export interface UserProfile {
   phoneNumber: string;
   registrationDate: string;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+    

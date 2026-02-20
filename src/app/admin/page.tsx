@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
             Weekly performance analytics
           </div>
           <div className="flex items-baseline gap-4 pt-4">
-            <div className="text-3xl font-bold">$206,800</div>
+            <div className="text-3xl font-bold">₹2,06,800</div>
             <div className="text-sm text-green-500">+10.5% Last 7 Days</div>
           </div>
         </CardHeader>

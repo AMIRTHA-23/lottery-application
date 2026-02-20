@@ -4,14 +4,14 @@ import { CreditCard, Landmark, Users, TrendingUp } from 'lucide-react';
 export const adminStats: AdminStat[] = [
   {
     title: 'Total Sales',
-    value: '$124,500',
+    value: '₹1,24,500',
     change: '+12.5%',
     changeType: 'increase',
     icon: CreditCard,
   },
   {
     title: 'Payouts',
-    value: '$82,300',
+    value: '₹82,300',
     change: '+8.2%',
     changeType: 'increase',
     icon: Landmark,
@@ -25,7 +25,7 @@ export const adminStats: AdminStat[] = [
   },
   {
     title: 'Net Profit',
-    value: '$42,200',
+    value: '₹42,200',
     change: '+15.4%',
     changeType: 'increase',
     icon: TrendingUp,

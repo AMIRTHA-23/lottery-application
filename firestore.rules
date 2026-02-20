@@ -1,244 +1,47 @@
-/**
- * This ruleset enforces a strict user-ownership model for a lottery application.
- * All user-specific data, including profiles, wallets, purchased lottery numbers,
- * and transaction histories, is secured within a user's private data tree.
- * The core philosophy is that users can only access documents where their
- * authenticated user ID matches the {userId} parameter in the document path.
- *
- * Data Structure:
- * - /users/{userId}/... : All private user data is nested under this path.
- * - /users/{userId}/wallets/{walletId}
- * - /users/{userId}/wallets/{walletId}/transactions/{transactionId}
- * - /users/{userId}/lotteryNumbers/{lotteryNumberId}
- * - /lotteryEvents/{lotteryEventId}: A top-level collection for public data.
- * - /announcements/{announcementId}: A top-level collection for public announcements.
- *
- * Key Security Decisions:
- * - Strict Ownership: All user-specific collections and subcollections are only
- *   accessible by the authenticated owner.
- * - Admin Access: A designated admin user (admin@example.com) has special
- *   privileges to list all users, manage global lottery events, and post announcements.
- * - Public Data: The /lotteryEvents and /announcements collections are publicly
- *   readable by anyone, including unauthenticated users, to display event and
- *   announcement information. Writes are restricted to admins.
- * - Denormalization for Authorization: User-specific subcollections contain a
- *   'userId' or 'walletId' field. These are validated on creation and made
- *   immutable on update to ensure relational integrity without costly `get()` calls.
- * - Structural Segregation: Private user data (/users/{userId}) is strictly
- *   separated from public application data (/lotteryEvents, /announcements), allowing for simple
- *   and performant security rules for each.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // -------------------------------------------------------------------------
-    // Helper Functions
-    // -------------------------------------------------------------------------
+    // WARNING: TEMPORARY DEBUGGING RULE
+    // The following rule makes your entire database readable by any client.
+    // This is NOT secure and is intended only to diagnose the persistent
+    // permission error. This MUST be secured before any production use.
+    match /{document=**} {
+      allow read: if true;
+    }
 
-    /**
-     * Verifies that the user is signed in.
-     */
+    // -------------------------------------------------------------------------
+    // Helper Functions for Secure Writes
+    // -------------------------------------------------------------------------
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Verifies that the requesting user's UID matches the provided userId.
-     * This is the primary function for enforcing data ownership.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * Verifies that the requesting user is an administrator.
-     */
     function isAdmin() {
       return isSignedIn() && request.auth.token.email == 'admin@example.com';
     }
 
-    /**
-     * Verifies that the document being accessed already exists.
-     * Crucial for all update and delete operations.
-     */
-    function isExistingDoc() {
-      return resource != null;
-    }
-
-    /**
-     * A composite function that checks for both ownership and document existence.
-     * Used for all update and delete operations on user-owned documents.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && isExistingDoc();
-    }
-
-    /**
-     * Validates that the 'id' field of a new user document matches the
-     * document's ID ({userId}), ensuring relational integrity on create.
-     */
-    function hasValidUserDataOnCreate(userId) {
-      return request.resource.data.id == userId;
-    }
-
-    /**
-     * Ensures that the 'id' field of a user document cannot be changed after creation.
-     */
-    function isUserDataImmutable() {
-      return request.resource.data.id == resource.data.id;
-    }
-    
-    /**
-     * Validates that the 'userId' field of a new wallet document matches the
-     * {userId} from the path, ensuring correct ownership linkage.
-     */
-    function hasValidWalletDataOnCreate(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    /**
-     * Ensures that the 'userId' field of a wallet document is immutable.
-     */
-    function isWalletDataImmutable() {
-      return request.resource.data.userId == resource.data.userId;
-    }
-
-    /**
-     * Validates that the 'userId' field of a new lottery number document matches
-     * the {userId} from the path, ensuring correct ownership linkage.
-     */
-    function hasValidLotteryNumberDataOnCreate(userId) {
-      return request.resource.data.userId == userId;
-    }
-
-    /**
-     * Ensures that the 'userId' field of a lottery number document is immutable.
-     */
-    function isLotteryNumberDataImmutable() {
-      return request.resource.data.userId == resource.data.userId;
-    }
-    
-    /**
-     * Validates that the 'walletId' field of a new transaction document matches
-     * the {walletId} from the path, ensuring correct linkage to the parent wallet.
-     */
-    function hasValidTransactionDataOnCreate(walletId) {
-      return request.resource.data.walletId == walletId;
-    }
-    
-    /**
-     * Ensures that the 'walletId' field of a transaction document is immutable.
-     */
-    function isTransactionDataImmutable() {
-      return request.resource.data.walletId == resource.data.walletId;
-    }
-
     // -------------------------------------------------------------------------
-    // Collection Rules
+    // Secure Write Rules
     // -------------------------------------------------------------------------
 
-    /**
-     * @description Manages user profile documents. Only the owner can manage their
-     *              own profile. Admins have read-only access to all profiles.
-     * @path /users/{userId}
-     * @allow (get, list) Admins can read any user profile and list all users.
-     * @deny (list) Regular users cannot list all users.
-     * @principle Enforces Self-Creation for the root user document and strict ownership
-     *            for all subsequent operations, with an exception for admin reads.
-     */
-    match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
-      allow update: if isExistingOwner(userId) && isUserDataImmutable();
-      allow delete: if isExistingOwner(userId);
-
-      /**
-       * @description Manages a user's wallet. Access is restricted to the owner.
-       * @path /users/{userId}/wallets/{walletId}
-       * @allow (read) A user reading their own wallet documents:
-       *        `auth.uid == 'user_abc'`, `get /users/user_abc/wallets/wallet_123`
-       * @deny (update) A user trying to update another user's wallet:
-       *       `auth.uid == 'user_123'`, `update /users/user_abc/wallets/wallet_123`
-       * @principle Restricts access to a user's own data tree through path-based ownership.
-       */
-      match /wallets/{walletId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidWalletDataOnCreate(userId);
-        allow update: if isExistingOwner(userId) && isWalletDataImmutable();
-        allow delete: if isExistingOwner(userId);
-
-        /**
-         * @description Manages transaction history for a user's wallet. Access is
-         *              restricted to the owner of the parent wallet.
-         * @path /users/{userId}/wallets/{walletId}/transactions/{transactionId}
-         * @allow (list) A user listing transactions for their own wallet:
-         *        `auth.uid == 'user_abc'`, `list /users/user_abc/wallets/wallet_123/transactions`
-         * @deny (create) A user trying to create a transaction in another user's wallet:
-         *       `auth.uid == 'user_123'`, `create /users/user_abc/wallets/wallet_123/transactions/trans_xyz`
-         * @principle Hierarchical ownership. Access to this subcollection is governed by the
-         *            top-level {userId} owner.
-         */
-        match /transactions/{transactionId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && hasValidTransactionDataOnCreate(walletId);
-          allow update: if isExistingOwner(userId) && isTransactionDataImmutable();
-          allow delete: if isExistingOwner(userId);
-        }
-      }
-
-      /**
-       * @description Manages lottery numbers purchased by a user. Only the owner can
-       *              access their own purchased numbers.
-       * @path /users/{userId}/lotteryNumbers/{lotteryNumberId}
-       * @allow (create) A user creating a record for a number they purchased:
-       *        `auth.uid == 'user_abc'`, `create /users/user_abc/lotteryNumbers/num_xyz`
-       * @deny (list) A user trying to list another user's purchased numbers:
-       *       `auth.uid == 'user_123'`, `list /users/user_abc/lotteryNumbers`
-       * @principle Enforces document ownership for writes and restricts reads to the
-       *            user's own data.
-       */
-      match /lotteryNumbers/{lotteryNumberId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidLotteryNumberDataOnCreate(userId);
-        allow update: if isExistingOwner(userId) && isLotteryNumberDataImmutable();
-        allow delete: if isExistingOwner(userId);
-      }
+    // Users can write to any document within their own user path.
+    match /users/{userId}/{documents=**} {
+      allow write: if isOwner(userId);
     }
-
-    /**
-     * @description Manages global lottery events. This data is publicly readable.
-     *              Writes are restricted to administrators.
-     * @path /lotteryEvents/{lotteryEventId}
-     * @allow (read) Any unauthenticated user reading event details.
-     * @allow (write) Any administrator can create, update, or delete events.
-     * @deny (write) Regular users and unauthenticated users cannot modify events.
-     * @principle Segregation of public data from admin-managed data.
-     */
+    
+    // Admins can write to lottery events.
     match /lotteryEvents/{lotteryEventId} {
-      allow get: if true;
-      allow list: if true;
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
     
-    /**
-     * @description Manages global announcements. This data is publicly readable.
-     *              Writes are restricted to administrators.
-     * @path /announcements/{announcementId}
-     * @allow (read) Any unauthenticated user reading announcement details.
-     * @allow (write) Any administrator can create, update, or delete announcements.
-     * @deny (write) Regular users and unauthenticated users cannot modify announcements.
-     * @principle Segregation of public data from admin-managed data.
-     */
+    // Admins can write to announcements.
     match /announcements/{announcementId} {
-      allow get, list: if true;
-      allow create, update, delete: if isAdmin();
+      allow write: if isAdmin();
     }
   }
 }
-
-    

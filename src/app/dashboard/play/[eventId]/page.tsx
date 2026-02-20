@@ -7,7 +7,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import Link from 'next/link';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const getPurchaseSchema = (gameType: LotteryEvent['gameType']) => {
   const digitCount = parseInt(gameType.replace('D', ''));
@@ -53,17 +53,7 @@ export default function PlayEventPage() {
       number: '',
       unitsPurchased: 1,
     },
-    // The context for form is dependent on `event` which is loaded async
-    // We need to reset the form resolver when the event is loaded.
-    context: event as any,
   });
-
-  // When the event loads, we update the form's schema
-  if (event && !form.control.options.context) {
-    form.control.options.context = event;
-    const newResolver = zodResolver(getPurchaseSchema(event.gameType));
-    (form as any).resolver = newResolver;
-  }
 
   const handlePurchase: (data: PurchaseFormValues) => void = async (data) => {
     if (!firestore || !user || !event || !wallet) {
@@ -241,5 +231,3 @@ export default function PlayEventPage() {
     </div>
   );
 }
-
-    

@@ -62,7 +62,7 @@ export default function PlayPage() {
                 </div>
             ) : gameTypes.length > 0 ? (
                 <Tabs defaultValue={gameTypes[0]} className="w-full">
-                    <TabsList className={`grid w-full grid-cols-${gameTypes.length < 4 ? gameTypes.length : 4} mb-4`}>
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-4">
                         {gameTypes.map(type => (
                             <TabsTrigger key={type} value={type}>{type}</TabsTrigger>
                         ))}

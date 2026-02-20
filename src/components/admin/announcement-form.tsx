@@ -88,5 +88,3 @@ export function AnnouncementForm({ onSuccess }: AnnouncementFormProps) {
     </Form>
   );
 }
-
-    

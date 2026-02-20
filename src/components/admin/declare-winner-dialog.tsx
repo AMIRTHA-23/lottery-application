@@ -95,5 +95,3 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
     </Dialog>
   );
 }
-
-    

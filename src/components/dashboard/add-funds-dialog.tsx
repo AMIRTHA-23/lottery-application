@@ -139,5 +139,3 @@ export function AddFundsDialog({ isOpen, onOpenChange }: AddFundsDialogProps) {
     </Dialog>
   );
 }
-
-    

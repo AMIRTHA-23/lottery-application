@@ -34,6 +34,20 @@ export default function WalletPage() {
   
   const isLoading = isWalletsLoading || isTransactionsLoading;
 
+  const getTransactionBadgeVariant = (type: Transaction['type']) => {
+    switch (type) {
+      case 'Deposit':
+      case 'Payout':
+        return 'success';
+      case 'Purchase':
+        return 'destructive';
+      case 'Withdrawal':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  }
+
   return (
     <>
       <AddFundsDialog isOpen={isAddFundsOpen} onOpenChange={setAddFundsOpen} />
@@ -99,7 +113,7 @@ export default function WalletPage() {
                           <TableCell className="text-xs text-muted-foreground">{new Date(tx.transactionDate).toLocaleDateString()}</TableCell>
                           <TableCell className="font-medium max-w-[250px] truncate">{tx.description}</TableCell>
                           <TableCell>
-                            <Badge variant={tx.type === 'Deposit' ? 'success' : 'secondary'}>{tx.type}</Badge>
+                            <Badge variant={getTransactionBadgeVariant(tx.type)}>{tx.type}</Badge>
                           </TableCell>
                           <TableCell className={cn("text-right font-semibold", tx.amount > 0 ? 'text-green-500' : 'text-red-500')}>
                             {tx.amount > 0 ? '+' : ''}

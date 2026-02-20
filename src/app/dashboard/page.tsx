@@ -11,6 +11,8 @@ import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown } from 'lucid
 import { AddFundsDialog } from '@/components/dashboard/add-funds-dialog';
 import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -25,26 +27,29 @@ export default function DashboardPage() {
   const { data: wallets, isLoading: isWalletsLoading } = useCollection<Wallet>(walletQuery);
   const wallet = wallets?.[0];
 
-  // Query for user's transactions (for stats)
-  const transactionsQuery = useMemoFirebase(() => {
+  // Query for all user's transactions (for stats)
+  const allTransactionsQuery = useMemoFirebase(() => {
     if (!user || !firestore || !wallet) return null;
-    return query(collection(firestore, 'users', user.uid, 'wallets', wallet.id, 'transactions'));
+    return query(collection(firestore, 'users', user.uid, 'wallets', wallet.id, 'transactions'), orderBy('transactionDate', 'desc'));
   }, [user, firestore, wallet]);
-  const { data: transactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    if (!transactions) {
-      return { totalWinnings: 0, totalSpent: 0 };
+  const { data: allTransactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(allTransactionsQuery);
+  
+  const { stats, recentTransactions } = useMemo(() => {
+    if (!allTransactions) {
+      return { stats: { totalWinnings: 0, totalSpent: 0 }, recentTransactions: [] };
     }
-    const totalWinnings = transactions
+    const totalWinnings = allTransactions
       .filter((tx) => tx.type === 'Payout')
       .reduce((acc, tx) => acc + tx.amount, 0);
-    const totalSpent = transactions
+    const totalSpent = allTransactions
       .filter((tx) => tx.type === 'Purchase')
       .reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
-    return { totalWinnings, totalSpent };
-  }, [transactions]);
+    
+    return { 
+        stats: { totalWinnings, totalSpent }, 
+        recentTransactions: allTransactions.slice(0, 5) 
+    };
+  }, [allTransactions]);
 
 
   // Query for user's recent lottery numbers
@@ -80,6 +85,20 @@ export default function DashboardPage() {
         icon: TrendingDown
     }
   ]
+  
+  const getTransactionBadgeVariant = (type: Transaction['type']) => {
+    switch (type) {
+      case 'Deposit':
+      case 'Payout':
+        return 'success';
+      case 'Purchase':
+        return 'destructive';
+      case 'Withdrawal':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  }
 
   return (
     <>
@@ -144,26 +163,36 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Recent Announcements</CardTitle>
+                    <CardTitle>Recent Activity</CardTitle>
+                    <CardDescription>Your last 5 transactions from your wallet.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isAnnouncementsLoading ? <p>Loading...</p> : announcements && announcements.length > 0 ? (
-                    <div className="space-y-4">
-                        {announcements.map((item) => (
-                        <div key={item.id} className="flex items-start gap-4">
-                            <Megaphone className="h-5 w-5 text-primary mt-1"/>
-                            <div className='flex-1'>
-                                <p className="font-semibold">{item.title}</p>
-                                <p className="text-sm text-muted-foreground">{item.content}</p>
-                            </div>
-                        </div>
-                        ))}
-                    </div>
+                    {isTransactionsLoading ? <p>Loading...</p> : recentTransactions && recentTransactions.length > 0 ? (
+                        <Table>
+                            <TableBody>
+                            {recentTransactions.map((tx) => (
+                                <TableRow key={tx.id}>
+                                    <TableCell>
+                                        <div className="font-medium max-w-[250px] truncate">{tx.description}</div>
+                                        <div className="text-xs text-muted-foreground">{new Date(tx.transactionDate).toLocaleString()}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={getTransactionBadgeVariant(tx.type)}>{tx.type}</Badge>
+                                    </TableCell>
+                                    <TableCell className={cn("text-right font-semibold", tx.amount > 0 ? 'text-green-500' : 'text-red-500')}>
+                                        {tx.amount > 0 ? '+' : ''}
+                                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(tx.amount)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            </TableBody>
+                        </Table>
                     ) : (
-                    <p className="text-muted-foreground text-sm">No new announcements.</p>
+                    <p className="text-muted-foreground text-sm">No transactions yet.</p>
                     )}
                 </CardContent>
             </Card>
+            
             <Card>
                 <CardHeader>
                     <CardTitle>My Recent Numbers</CardTitle>
@@ -207,31 +236,24 @@ export default function DashboardPage() {
         <div className="lg:col-span-1 space-y-6">
              <Card>
                 <CardHeader>
-                    <CardTitle>How to Play</CardTitle>
-                    <CardDescription>A quick guide to start playing.</CardDescription>
+                    <CardTitle>Recent Announcements</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <ul className="space-y-4">
-                        <li className="flex items-start gap-3">
-                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">1</div>
-                            <p className="text-sm text-muted-foreground">Go to the <Link href="/dashboard/play" className="font-semibold text-primary hover:underline">Play</Link> page to see active games.</p>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">2</div>
-                            <p className="text-sm text-muted-foreground">Pick a game, choose your lucky number, and decide how many units to buy.</p>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">3</div>
-                            <p className="text-sm text-muted-foreground">Confirm your purchase from your wallet balance.</p>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="flex-shrink-0 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">4</div>
-                            <p className="text-sm text-muted-foreground">Check the <Link href="/dashboard/results" className="font-semibold text-primary hover:underline">Results</Link> page after the draw to see if you've won!</p>
-                        </li>
-                    </ul>
-                    <Button asChild variant="secondary" className="mt-4 w-full">
-                        <Link href="/dashboard/rules">Read Full Game Rules</Link>
-                    </Button>
+                    {isAnnouncementsLoading ? <p>Loading...</p> : announcements && announcements.length > 0 ? (
+                    <div className="space-y-4">
+                        {announcements.map((item) => (
+                        <div key={item.id} className="flex items-start gap-4">
+                            <Megaphone className="h-5 w-5 text-primary mt-1"/>
+                            <div className='flex-1'>
+                                <p className="font-semibold">{item.title}</p>
+                                <p className="text-sm text-muted-foreground">{item.content}</p>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                    ) : (
+                    <p className="text-muted-foreground text-sm">No new announcements.</p>
+                    )}
                 </CardContent>
             </Card>
         </div>

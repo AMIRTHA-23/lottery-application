@@ -9,14 +9,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+import { useState } from 'react';
+import { AdjustWalletDialog } from '@/components/admin/adjust-wallet-dialog';
 
 export default function UserDetailPage() {
   const { userId } = useParams();
   const firestore = useFirestore();
   const router = useRouter();
+  const [isAdjustWalletOpen, setAdjustWalletOpen] = useState(false);
 
   // Fetch User Profile
   const userRef = useMemoFirebase(() => {
@@ -40,9 +42,9 @@ export default function UserDetailPage() {
   }, [firestore, userId, wallet]);
   const { data: transactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
-  const isLoading = isUserLoading || isWalletsLoading || isTransactionsLoading;
+  const isLoading = isUserLoading || isWalletsLoading;
 
-  if (isUserLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -65,7 +67,24 @@ export default function UserDetailPage() {
     );
   }
 
+  const getTransactionBadgeVariant = (type: Transaction['type']) => {
+    switch (type) {
+      case 'Deposit':
+      case 'Payout':
+        return 'success';
+      case 'Purchase':
+        return 'destructive';
+      case 'Withdrawal':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  }
+
+
   return (
+    <>
+    {user && wallet && <AdjustWalletDialog user={user} wallet={wallet} isOpen={isAdjustWalletOpen} onOpenChange={setAdjustWalletOpen} />}
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" onClick={() => router.push('/admin/users')}>
@@ -100,9 +119,15 @@ export default function UserDetailPage() {
              {isWalletsLoading ? (
               <Skeleton className="h-12 w-3/4" />
             ) : wallet ? (
-              <p className="text-4xl font-bold">
-                {new Intl.NumberFormat('en-IN', { style: 'currency', currency: wallet.currency || 'INR' }).format(wallet.balance || 0)}
-              </p>
+                <>
+                    <p className="text-4xl font-bold">
+                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: wallet.currency || 'INR' }).format(wallet.balance || 0)}
+                    </p>
+                    <Button size="sm" className="mt-2" onClick={() => setAdjustWalletOpen(true)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Adjust Balance
+                    </Button>
+                </>
             ) : (
                <p className="text-muted-foreground">No wallet found for this user.</p>
             )}
@@ -141,7 +166,7 @@ export default function UserDetailPage() {
                     <TableCell className="text-xs text-muted-foreground">{new Date(tx.transactionDate).toLocaleString()}</TableCell>
                     <TableCell className="font-medium max-w-[250px] truncate">{tx.description}</TableCell>
                     <TableCell>
-                      <Badge variant={tx.type === 'Deposit' || tx.type === 'Payout' ? 'success' : 'secondary'}>{tx.type}</Badge>
+                      <Badge variant={getTransactionBadgeVariant(tx.type)}>{tx.type}</Badge>
                     </TableCell>
                     <TableCell className={cn("text-right font-semibold", tx.amount > 0 ? 'text-green-500' : 'text-red-500')}>
                       {tx.amount > 0 ? '+' : ''}
@@ -163,5 +188,6 @@ export default function UserDetailPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

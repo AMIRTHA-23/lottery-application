@@ -1,7 +1,7 @@
 'use client';
 
-import { useFirestore, useDoc, useUser, useCollection, useMemoFirebase, setDocumentNonBlocking, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, where, limit, runTransaction } from 'firebase/firestore';
+import { useFirestore, useDoc, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, collection, query, limit, runTransaction } from 'firebase/firestore';
 import type { LotteryEvent, Wallet } from '@/lib/types';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,8 @@ import { Terminal } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-const getPurchaseSchema = (gameType: LotteryEvent['gameType']) => {
+// Schema generation is a pure function, can be outside.
+const getPurchaseSchema = (gameType: LotteryEvent['gameType'] = '1D') => {
   const digitCount = parseInt(gameType.replace('D', ''));
   return z.object({
     number: z.string().length(digitCount, { message: `Number must be ${digitCount} digits.` }).regex(/^\d+$/, 'Must be a numeric value.'),
@@ -24,28 +25,17 @@ const getPurchaseSchema = (gameType: LotteryEvent['gameType']) => {
   });
 };
 
-export default function PlayEventPage() {
-  const { eventId } = useParams();
-  const firestore = useFirestore();
+type PurchaseFormValues = z.infer<ReturnType<typeof getPurchaseSchema>>;
+
+// This new component will contain the form logic.
+// It only renders when `event` is available, ensuring `useForm` gets the right resolver.
+function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet | undefined }) {
   const { user } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
 
-  const eventRef = useMemoFirebase(() => {
-    if (!firestore || !eventId) return null;
-    return doc(firestore, 'lotteryEvents', eventId as string);
-  }, [firestore, eventId]);
-  const { data: event, isLoading: isEventLoading } = useDoc<LotteryEvent>(eventRef);
-
-  const walletQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, 'users', user.uid, 'wallets'), limit(1));
-  }, [user, firestore]);
-  const { data: wallets, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
-  const wallet = wallets?.[0];
-
-  const formSchema = getPurchaseSchema(event?.gameType || '1D');
-  type PurchaseFormValues = z.infer<typeof formSchema>;
+  const formSchema = getPurchaseSchema(event.gameType);
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
@@ -55,12 +45,12 @@ export default function PlayEventPage() {
     },
   });
 
-  const handlePurchase: (data: PurchaseFormValues) => void = async (data) => {
-    if (!firestore || !user || !event || !wallet) {
+  const handlePurchase = async (data: PurchaseFormValues) => {
+    if (!firestore || !user || !wallet) {
       toast({
         variant: 'destructive',
         title: 'Purchase Failed',
-        description: 'Could not find required user, event, or wallet information.',
+        description: 'Could not find required user or wallet information. Please try again.',
       });
       return;
     }
@@ -82,7 +72,6 @@ export default function PlayEventPage() {
         const newLotteryNumberRef = doc(collection(firestore, 'users', user.uid, 'lotteryNumbers'));
         const newTransactionRef = doc(collection(firestore, 'users', user.uid, 'wallets', wallet.id, 'transactions'));
         
-        // 1. Read the wallet balance
         const walletDoc = await transaction.get(walletRef);
         if (!walletDoc.exists()) {
           throw new Error("Wallet not found.");
@@ -92,10 +81,8 @@ export default function PlayEventPage() {
           throw new Error("Insufficient funds.");
         }
 
-        // 2. Update wallet balance
         transaction.update(walletRef, { balance: currentBalance - totalCost });
 
-        // 3. Create lottery number document
         transaction.set(newLotteryNumberRef, {
           id: newLotteryNumberRef.id,
           userId: user.uid,
@@ -106,7 +93,6 @@ export default function PlayEventPage() {
           unitsPurchased: data.unitsPurchased,
         });
 
-        // 4. Create transaction document
         transaction.set(newTransactionRef, {
             id: newTransactionRef.id,
             walletId: wallet.id,
@@ -121,7 +107,7 @@ export default function PlayEventPage() {
         title: 'Purchase Successful!',
         description: `You bought ${data.unitsPurchased} units of ${data.number}. Good luck!`,
       });
-      router.push('/dashboard');
+      router.push('/dashboard/play');
 
     } catch (e: any) {
       console.error("Transaction failed: ", e);
@@ -132,6 +118,99 @@ export default function PlayEventPage() {
       });
     }
   };
+
+  const totalCost = (form.watch('unitsPurchased') || 0) * (event.unitPrice || 0);
+
+  return (
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Play: {event.name}</CardTitle>
+        <CardDescription>
+          Choose your {parseInt(event.gameType.replace('D', ''))}-digit number and how many units you want to buy.
+          The price is {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)} per unit.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your Number ({event.gameType})</FormLabel>
+                    <FormControl>
+                      <Input placeholder={`Enter ${parseInt(event.gameType.replace('D', ''))} digits`} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="unitsPurchased"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Units</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Card className="bg-muted/50">
+                <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold">Total Cost</span>
+                         <span className="text-lg font-bold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalCost)}</span>
+                    </div>
+                     <div className="text-sm text-muted-foreground text-right mt-1">
+                        Balance: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet?.balance || 0)}
+                     </div>
+                </CardContent>
+            </Card>
+
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !wallet}>
+              {form.formState.isSubmitting ? 'Purchasing...' : 'Confirm Purchase'}
+            </Button>
+             {!wallet && (
+              <Alert variant="destructive">
+                <AlertTitle>No Wallet Found</AlertTitle>
+                <AlertDescription>
+                  You must have a wallet with funds to play. Please make a deposit first.
+                   <Button asChild variant="link" className='p-0 h-auto ml-1'><Link href="/dashboard/wallet">Go to Wallet</Link></Button>
+                </AlertDescription>
+              </Alert>
+            )}
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Main page component that fetches data and handles loading/error states.
+export default function PlayEventPage() {
+  const { eventId } = useParams();
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const eventRef = useMemoFirebase(() => {
+    if (!firestore || !eventId) return null;
+    return doc(firestore, 'lotteryEvents', eventId as string);
+  }, [firestore, eventId]);
+  const { data: event, isLoading: isEventLoading } = useDoc<LotteryEvent>(eventRef);
+
+  const walletQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, 'users', user.uid, 'wallets'), limit(1));
+  }, [user, firestore]);
+  const { data: wallets, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
+  const wallet = wallets?.[0];
 
   if (isEventLoading || isWalletLoading) {
     return <div className="container py-6">Loading game...</div>;
@@ -156,78 +235,9 @@ export default function PlayEventPage() {
     );
   }
 
-  const totalCost = (form.watch('unitsPurchased') || 0) * (event?.unitPrice || 0);
-
   return (
     <div className="container py-6">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Play: {event.name}</CardTitle>
-          <CardDescription>
-            Choose your {parseInt(event.gameType.replace('D', ''))}-digit number and how many units you want to buy.
-            The price is {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)} per unit.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Number ({event.gameType})</FormLabel>
-                      <FormControl>
-                        <Input placeholder={`Enter ${parseInt(event.gameType.replace('D', ''))} digits`} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="unitsPurchased"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Units</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Card className="bg-muted/50">
-                  <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                          <span className="text-lg font-semibold">Total Cost</span>
-                           <span className="text-lg font-bold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalCost)}</span>
-                      </div>
-                       <div className="text-sm text-muted-foreground text-right mt-1">
-                          Balance: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet?.balance || 0)}
-                       </div>
-                  </CardContent>
-              </Card>
-
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !wallet}>
-                {form.formState.isSubmitting ? 'Purchasing...' : 'Confirm Purchase'}
-              </Button>
-               {!wallet && (
-                <Alert variant="destructive">
-                  <AlertTitle>No Wallet Found</AlertTitle>
-                  <AlertDescription>
-                    You must have a wallet with funds to play. Please make a deposit first.
-                     <Button asChild variant="link" className='p-0 h-auto ml-1'><Link href="/dashboard/wallet">Go to Wallet</Link></Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <PlayEventForm event={event} wallet={wallet} />
     </div>
   );
 }

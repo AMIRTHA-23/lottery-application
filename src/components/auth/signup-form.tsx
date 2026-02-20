@@ -15,9 +15,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, setDocumentNonBlocking } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { doc, writeBatch, collection } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -51,11 +51,12 @@ export function SignUpForm() {
         displayName: values.name,
       });
 
-      // 3. Create a user document in Firestore
+      // 3. Create a user document and a wallet in Firestore atomically
+      const batch = writeBatch(firestore);
+
       const userDocRef = doc(firestore, 'users', user.uid);
       const [firstName, ...lastName] = values.name.split(' ');
-
-      setDocumentNonBlocking(userDocRef, {
+      batch.set(userDocRef, {
         id: user.uid,
         username: values.name,
         firstName: firstName || '',
@@ -63,7 +64,18 @@ export function SignUpForm() {
         email: user.email,
         phoneNumber: '',
         registrationDate: new Date().toISOString(),
-      }, { merge: true });
+      });
+
+      // Create wallet for new user
+      const walletRef = doc(collection(firestore, 'users', user.uid, 'wallets'));
+      batch.set(walletRef, {
+        id: walletRef.id,
+        userId: user.uid,
+        balance: 0,
+        currency: 'INR'
+      });
+
+      await batch.commit();
 
       toast({
         title: 'Account Created',
@@ -72,19 +84,20 @@ export function SignUpForm() {
       router.push('/dashboard');
 
     } catch (error: any) {
-      console.error("Sign up error:", error);
-      let description = 'Could not create your account. Please try again.';
       if (error.code === 'auth/email-already-in-use') {
-        description =
-          'This email is already registered. Please log in or use a different email.';
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description: 'This email is already registered. Please log in or use a different email.',
+        });
       } else {
-        description = error.message || description;
+        console.error("Sign up error:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description: error.message || 'Could not create your account. Please try again.',
+        });
       }
-      toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: description,
-      });
     }
   }
 
@@ -130,8 +143,8 @@ export function SignUpForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">
-          Create Account
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? "Creating Account..." : "Create Account"}
         </Button>
       </form>
     </Form>

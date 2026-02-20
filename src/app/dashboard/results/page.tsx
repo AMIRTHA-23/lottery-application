@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { LotteryEvent, LotteryNumber } from '@/lib/types';
 import {
   Table,
@@ -21,6 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function ResultsPage() {
   const firestore = useFirestore();
@@ -28,8 +30,7 @@ export default function ResultsPage() {
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Order by event date, descending
-    return query(collection(firestore, 'lotteryEvents'), where('status', '==', 'Completed'), orderBy('eventDate', 'desc'));
+    return collection(firestore, 'lotteryEvents');
   }, [firestore]);
 
   const numbersQuery = useMemoFirebase(() => {
@@ -37,12 +38,19 @@ export default function ResultsPage() {
     return query(collection(firestore, 'users', user.uid, 'lotteryNumbers'));
   }, [user, firestore]);
 
-  const { data: events, isLoading: isEventsLoading } = useCollection<LotteryEvent>(eventsQuery);
+  const { data: allEvents, isLoading: isEventsLoading } = useCollection<LotteryEvent>(eventsQuery);
   const { data: userNumbers, isLoading: isNumbersLoading } = useCollection<LotteryNumber>(numbersQuery);
+
+  const events = useMemo(() => {
+      if (!allEvents) return [];
+      return allEvents
+          .filter(event => event.status === 'Completed')
+          .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+  }, [allEvents]);
   
   const isLoading = isEventsLoading || isNumbersLoading;
 
-  const userWins = useMemoFirebase(() => {
+  const userWins = useMemo(() => {
     if (!userNumbers || !events) return new Map();
 
     const wins = new Map<string, LotteryNumber[]>(); // Map of eventId to winning numbers
@@ -130,5 +138,3 @@ export default function ResultsPage() {
     </div>
   );
 }
-
-    

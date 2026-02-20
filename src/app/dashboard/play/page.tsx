@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import type { LotteryEvent } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,15 +16,18 @@ export default function PlayPage() {
 
     const eventsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(
-            collection(firestore, 'lotteryEvents'), 
-            where('status', '==', 'Open'), 
-            where('isEnabled', '==', true),
-            orderBy('eventDate', 'asc')
-        );
+        return collection(firestore, 'lotteryEvents');
     }, [firestore]);
 
-    const { data: lotteryEvents, isLoading } = useCollection<LotteryEvent>(eventsQuery);
+    const { data: allEvents, isLoading } = useCollection<LotteryEvent>(eventsQuery);
+
+    const lotteryEvents = useMemo(() => {
+        if (!allEvents) return [];
+        return allEvents
+            .filter(event => event.status === 'Open' && event.isEnabled)
+            .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+    }, [allEvents]);
+
 
     return (
         <div className="container py-6">
@@ -81,5 +85,3 @@ export default function PlayPage() {
         </div>
     );
 }
-
-    

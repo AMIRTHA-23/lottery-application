@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { LotteryEvent } from '@/lib/types';
 import {
   Table,
@@ -26,11 +27,17 @@ export default function ReportsPage() {
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // Order by event date, descending
-    return query(collection(firestore, 'lotteryEvents'), orderBy('eventDate', 'desc'));
+    return query(collection(firestore, 'lotteryEvents'));
   }, [firestore]);
 
-  const { data: events, isLoading } = useCollection<LotteryEvent>(eventsQuery);
+  const { data: allEvents, isLoading } = useCollection<LotteryEvent>(eventsQuery);
+
+  const events = useMemo(() => {
+    if (!allEvents) return [];
+    // Sort by event date, descending
+    return [...allEvents].sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+  }, [allEvents]);
+
 
   return (
     <div className="space-y-6">

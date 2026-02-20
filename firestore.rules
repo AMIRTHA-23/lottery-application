@@ -10,36 +10,23 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // -------------------------------------------------------------------------
-    // Helper Functions for Secure Writes
-    // -------------------------------------------------------------------------
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
+    // Secure write rules remain in place.
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'admin@example.com';
+      return request.auth != null && request.auth.token.email == 'admin@example.com';
     }
 
-    // -------------------------------------------------------------------------
-    // Secure Write Rules
-    // -------------------------------------------------------------------------
-
-    // Users can write to any document within their own user path.
     match /users/{userId}/{documents=**} {
       allow write: if isOwner(userId);
     }
     
-    // Admins can write to lottery events.
     match /lotteryEvents/{lotteryEventId} {
       allow write: if isAdmin();
     }
     
-    // Admins can write to announcements.
     match /announcements/{announcementId} {
       allow write: if isAdmin();
     }

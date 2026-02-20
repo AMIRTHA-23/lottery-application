@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 export default function UsersPage() {
   const firestore = useFirestore();
@@ -39,7 +40,7 @@ export default function UsersPage() {
         <CardHeader>
           <CardTitle>User Management</CardTitle>
           <CardDescription>
-            A list of all users in the system.
+            A list of all users in the system. Click on a username to view details.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,7 +75,9 @@ export default function UsersPage() {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
-                      {user.username}
+                       <Link href={`/admin/users/${user.id}`} className="hover:underline text-primary">
+                        {user.username}
+                      </Link>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>

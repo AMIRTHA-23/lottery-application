@@ -52,12 +52,20 @@ export function LoginForm() {
       }
 
     } catch (error: any) {
-      console.error('Login Error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: error.message || 'Could not sign you in. Please check your credentials.',
-      });
+      if (error.code === 'auth/invalid-credential') {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'Invalid email or password. Please try again.',
+        });
+      } else {
+        console.error('Login Error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Uh oh! Something went wrong.',
+          description: error.message || 'Could not sign you in. Please check your credentials.',
+        });
+      }
     }
   }
 

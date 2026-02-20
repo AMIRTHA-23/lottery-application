@@ -22,15 +22,9 @@ export interface WalletTransaction {
   type: 'credit' | 'debit';
 }
 
-export interface LiveDraw {
-  id: string;
-  title: string;
-  drawDate: string;
-  prize: string;
+export interface LiveDraw extends LotteryEvent {
   image: string;
   imageHint: string;
-  countdown: string | null;
-  isHot: boolean;
 }
 
 export interface AdminStat {
@@ -89,8 +83,9 @@ export interface LotteryEvent {
   result: string;
   status: 'Open' | 'Closed' | 'Completed';
   isEnabled: boolean;
-  gameType: '1D' | '2D' | '3D' | '4D';
+  gameType: '1D' | '2D' | '3D' | '4D' | 'LuckyDraw';
   unitPrice: number;
+  prize?: string;
 }
 
 export interface UserProfile {
@@ -109,3 +104,5 @@ export interface Announcement {
   content: string;
   createdAt: string;
 }
+
+    

@@ -82,7 +82,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "LotteryNumber",
       "type": "object",
-      "description": "Represents a lottery number purchased by a user.",
+      "description": "Represents a lottery number or ticket purchased by a user.",
       "properties": {
         "id": {
           "type": "string",
@@ -98,7 +98,7 @@
         },
         "number": {
           "type": "string",
-          "description": "The lottery number itself."
+          "description": "The lottery number or a unique ticket identifier."
         },
         "purchaseDate": {
           "type": "string",
@@ -157,12 +157,16 @@
         },
         "gameType": {
           "type": "string",
-          "description": "The type of game (e.g., '1D', '2D', '3D', '4D').",
-          "enum": ["1D", "2D", "3D", "4D"]
+          "description": "The type of game (e.g., '1D', '2D', '3D', '4D', 'LuckyDraw').",
+          "enum": ["1D", "2D", "3D", "4D", "LuckyDraw"]
         },
         "unitPrice": {
           "type": "number",
           "description": "The price per unit for a number in this lottery event."
+        },
+        "prize": {
+            "type": "string",
+            "description": "The prize for special events like LuckyDraw."
         }
       },
       "required": [

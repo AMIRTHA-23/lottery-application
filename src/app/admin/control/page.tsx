@@ -26,8 +26,9 @@ import { DeclareWinnerDialog } from '@/components/admin/declare-winner-dialog';
 const createEventSchema = z.object({
   name: z.string().min(3, { message: 'Event name must be at least 3 characters long.' }),
   eventDate: z.date({ required_error: 'An event date is required.' }),
-  gameType: z.enum(['1D', '2D', '3D', '4D'], { required_error: 'Please select a game type.'}),
+  gameType: z.enum(['1D', '2D', '3D', '4D', 'LuckyDraw'], { required_error: 'Please select a game type.'}),
   unitPrice: z.coerce.number().min(1, { message: 'Unit price must be at least 1.'}),
+  prize: z.string().optional(),
 });
 
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
@@ -53,6 +54,8 @@ export default function ControlPage() {
     },
   });
 
+  const watchGameType = form.watch('gameType');
+
   const handleCreateEvent: SubmitHandler<CreateEventFormValues> = async (data) => {
     if (!firestore) return;
 
@@ -64,6 +67,7 @@ export default function ControlPage() {
       isEnabled: true,
       gameType: data.gameType,
       unitPrice: data.unitPrice,
+      prize: data.prize || '',
     };
 
     addDocumentNonBlocking(collection(firestore, 'lotteryEvents'), newEvent);
@@ -112,7 +116,7 @@ export default function ControlPage() {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label>Game Type</Label>
-                    <Select onValueChange={(value) => form.setValue('gameType', value as '1D'|'2D'|'3D'|'4D')} defaultValue={form.getValues('gameType')}>
+                    <Select onValueChange={(value) => form.setValue('gameType', value as any)} defaultValue={form.getValues('gameType')}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a type" />
                         </SelectTrigger>
@@ -121,16 +125,24 @@ export default function ControlPage() {
                             <SelectItem value="2D">2D</SelectItem>
                             <SelectItem value="3D">3D</SelectItem>
                             <SelectItem value="4D">4D</SelectItem>
+                            <SelectItem value="LuckyDraw">Lucky Draw</SelectItem>
                         </SelectContent>
                     </Select>
                      {form.formState.errors.gameType && <p className="text-sm text-destructive">{form.formState.errors.gameType.message}</p>}
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="unitPrice">Unit Price</Label>
+                    <Label htmlFor="unitPrice">Ticket Price</Label>
                     <Input id="unitPrice" type="number" placeholder="e.g., 10" {...form.register('unitPrice')} />
                     {form.formState.errors.unitPrice && <p className="text-sm text-destructive">{form.formState.errors.unitPrice.message}</p>}
                 </div>
               </div>
+              {watchGameType === 'LuckyDraw' && (
+                 <div className="space-y-2">
+                    <Label htmlFor="prize">Prize</Label>
+                    <Input id="prize" placeholder="e.g., Brand New Car" {...form.register('prize')} />
+                    {form.formState.errors.prize && <p className="text-sm text-destructive">{form.formState.errors.prize.message}</p>}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Event Date</Label>
                 <Popover>
@@ -219,3 +231,5 @@ export default function ControlPage() {
     </div>
   );
 }
+
+    

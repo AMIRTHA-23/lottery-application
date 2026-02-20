@@ -4,7 +4,7 @@ import { useFirestore, useDoc, useUser, useCollection, useMemoFirebase } from '@
 import { doc, collection, query, limit, runTransaction } from 'firebase/firestore';
 import type { LotteryEvent, Wallet } from '@/lib/types';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -12,15 +12,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Wand2 } from 'lucide-react';
+import { Terminal, Wand2, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState } from 'react';
 import { NumberInput } from '@/components/dashboard/number-input';
 import { generateLuckyNumber } from '@/ai/flows/generate-lucky-number';
+import Image from 'next/image';
 
 // Schema generation is a pure function, can be outside.
 const getPurchaseSchema = (gameType: LotteryEvent['gameType'] = '1D') => {
+   if (gameType === 'LuckyDraw') {
+    return z.object({
+      unitsPurchased: z.coerce.number().min(1, { message: 'You must purchase at least 1 ticket.' }),
+    });
+  }
   const digitCount = parseInt(gameType.replace('D', ''));
   return z.object({
     number: z.string().length(digitCount, { message: `Number must be ${digitCount} digits.` }).regex(/^\d+$/, 'Must be a numeric value.'),
@@ -44,13 +50,13 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      number: '',
       unitsPurchased: 1,
+      ...((event.gameType !== 'LuckyDraw' && { number: '' }) || {}),
     },
   });
 
   const handleQuickPick = async () => {
-    if (!user) return;
+    if (!user || event.gameType === 'LuckyDraw') return;
     setIsPicking(true);
     try {
       const result = await generateLuckyNumber({
@@ -113,16 +119,22 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
         }
 
         transaction.update(walletRef, { balance: currentBalance - totalCost });
+        
+        const numberToSave = event.gameType === 'LuckyDraw' ? newLotteryNumberRef.id : (data as any).number;
 
         transaction.set(newLotteryNumberRef, {
           id: newLotteryNumberRef.id,
           userId: user.uid,
           lotteryEventId: event.id,
-          number: data.number,
+          number: numberToSave,
           purchaseDate: new Date().toISOString(),
           unitPrice: event.unitPrice,
           unitsPurchased: data.unitsPurchased,
         });
+        
+        const description = event.gameType === 'LuckyDraw' 
+            ? `Purchased ${data.unitsPurchased} ticket(s) for ${event.name}`
+            : `Purchased ${data.unitsPurchased} units of ${numberToSave} for ${event.name}`;
 
         transaction.set(newTransactionRef, {
             id: newTransactionRef.id,
@@ -130,13 +142,13 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
             transactionDate: new Date().toISOString(),
             amount: -totalCost,
             type: 'Purchase',
-            description: `Purchased ${data.unitsPurchased} units of ${data.number} for ${event.name}`
+            description: description,
         });
       });
 
       toast({
         title: 'Purchase Successful!',
-        description: `You bought ${data.unitsPurchased} units of ${data.number}. Good luck!`,
+        description: `Your purchase for ${event.name} is confirmed. Good luck!`,
       });
       router.push('/dashboard/play');
 
@@ -154,85 +166,95 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
 
   return (
     <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Play: {event.name}</CardTitle>
-        <CardDescription>
-          Choose your {parseInt(event.gameType.replace('D', ''))}-digit number and how many units you want to buy.
-          The price is {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)} per unit.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-8">
-            <div className="space-y-4">
-               <FormField
-                control={form.control}
-                name="number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-center block text-muted-foreground">Your Number ({event.gameType})</FormLabel>
-                    <FormControl>
-                      <NumberInput 
-                        length={parseInt(event.gameType.replace('D', ''))}
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={field.disabled}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-center" />
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-center">
-                 <Button type="button" variant="outline" onClick={handleQuickPick} disabled={isPicking}>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  {isPicking ? 'Consulting the oracle...' : 'AI Quick Pick'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4 items-end">
-               <FormField
-                control={form.control}
-                name="unitsPurchased"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Units to Purchase</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1" {...field} className="h-12 text-lg" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <Card className="bg-muted/50">
-                <CardContent className="p-3">
-                    <div className="flex justify-between items-center">
-                        <span className="font-semibold">Total Cost</span>
-                         <span className="font-bold text-lg">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalCost)}</span>
+       <Form {...form}>
+          <form onSubmit={form.handleSubmit(handlePurchase)}>
+              <CardHeader>
+                <CardTitle>Play: {event.name}</CardTitle>
+                 {event.gameType === 'LuckyDraw' ? (
+                     <CardDescription>
+                        Purchase your ticket to enter the draw for a chance to win: <span className='font-bold text-primary'>{event.prize}</span>!
+                        Each ticket costs {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)}.
+                    </CardDescription>
+                 ) : (
+                    <CardDescription>
+                      Choose your {parseInt(event.gameType.replace('D', ''))}-digit number and how many units you want to buy.
+                      The price is {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)} per unit.
+                    </CardDescription>
+                 )}
+              </CardHeader>
+              <CardContent className="space-y-8">
+                 {event.gameType !== 'LuckyDraw' && (
+                    <div className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="number"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-center block text-muted-foreground">Your Number ({event.gameType})</FormLabel>
+                                <FormControl>
+                                <NumberInput 
+                                    length={parseInt(event.gameType.replace('D', ''))}
+                                    value={field.value as string}
+                                    onChange={field.onChange}
+                                    disabled={field.disabled}
+                                />
+                                </FormControl>
+                                <FormMessage className="text-center" />
+                            </FormItem>
+                            )}
+                        />
+                        <div className="flex justify-center">
+                            <Button type="button" variant="outline" onClick={handleQuickPick} disabled={isPicking}>
+                            <Wand2 className="mr-2 h-4 w-4" />
+                            {isPicking ? 'Consulting the oracle...' : 'AI Quick Pick'}
+                            </Button>
+                        </div>
                     </div>
-                     <div className="text-sm text-muted-foreground text-right mt-1">
-                        Balance: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet?.balance || 0)}
-                     </div>
-                </CardContent>
-            </Card>
-            </div>
-
-            <Button type="submit" size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting || !wallet}>
-              {form.formState.isSubmitting ? 'Purchasing...' : 'Confirm Purchase'}
-            </Button>
-             {!wallet && (
-              <Alert variant="destructive">
-                <AlertTitle>No Wallet Found</AlertTitle>
-                <AlertDescription>
-                  You must have a wallet with funds to play. Please make a deposit first.
-                   <Button asChild variant="link" className='p-0 h-auto ml-1'><Link href="/dashboard/wallet">Go to Wallet</Link></Button>
-                </AlertDescription>
-              </Alert>
-            )}
-          </form>
+                )}
+                
+                <div className="grid md:grid-cols-2 gap-4 items-end">
+                  <FormField
+                    control={form.control}
+                    name="unitsPurchased"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{event.gameType === 'LuckyDraw' ? 'Number of Tickets' : 'Units to Purchase'}</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="1" {...field} className="h-12 text-lg" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-3">
+                        <div className="flex justify-between items-center">
+                            <span className="font-semibold">Total Cost</span>
+                            <span className="font-bold text-lg">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalCost)}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground text-right mt-1">
+                            Balance: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet?.balance || 0)}
+                        </div>
+                    </CardContent>
+                </Card>
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col gap-4">
+                 <Button type="submit" size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting || !wallet}>
+                    {form.formState.isSubmitting ? 'Purchasing...' : event.gameType === 'LuckyDraw' ? 'Buy Ticket' : 'Confirm Purchase'}
+                </Button>
+                {!wallet && (
+                  <Alert variant="destructive">
+                    <AlertTitle>No Wallet Found</AlertTitle>
+                    <AlertDescription>
+                      You must have a wallet with funds to play. Please make a deposit first.
+                      <Button asChild variant="link" className='p-0 h-auto ml-1'><Link href="/dashboard/wallet">Go to Wallet</Link></Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardFooter>
+            </form>
         </Form>
-      </CardContent>
     </Card>
   );
 }
@@ -285,3 +307,5 @@ export default function PlayEventPage() {
     </div>
   );
 }
+
+    

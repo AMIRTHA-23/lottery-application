@@ -32,7 +32,7 @@ export default function Home() {
                     Your Ticket to Big Wins
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Join SMSWIN, the secure and trusted platform for playing your favorite lotteries. Easy to play, instant results, and secure payouts.
+                    Join SMSWIN, the secure and trusted platform for playing your favorite lotteries. From daily number games to exciting live Lucky Draws, your chance to win is just a click away. Easy to play, instant results, and secure payouts.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -58,3 +58,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

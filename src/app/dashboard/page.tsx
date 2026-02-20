@@ -13,6 +13,7 @@ import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { LiveDrawCarousel } from '@/components/dashboard/live-draw-carousel';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -117,6 +118,8 @@ export default function DashboardPage() {
           <Link href="/dashboard/play">Play Now</Link>
         </Button>
       </div>
+
+      <LiveDrawCarousel />
       
        {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -196,14 +199,14 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>My Recent Numbers</CardTitle>
-                    <CardDescription>Your 5 most recently purchased numbers.</CardDescription>
+                    <CardDescription>Your 5 most recently purchased numbers or tickets.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isNumbersLoading ? <p>Loading...</p> : lotteryNumbers && lotteryNumbers.length > 0 ? (
                     <Table>
                         <TableHeader>
                         <TableRow>
-                            <TableHead>Number</TableHead>
+                            <TableHead>Number/Ticket</TableHead>
                             <TableHead>Event ID</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead className="text-right">Units</TableHead>
@@ -212,7 +215,7 @@ export default function DashboardPage() {
                         <TableBody>
                         {lotteryNumbers.map((num) => (
                             <TableRow key={num.id}>
-                            <TableCell className="font-medium">{num.number}</TableCell>
+                            <TableCell className="font-medium font-mono">{num.number.length > 10 ? `${num.number.substring(0,10)}...` : num.number}</TableCell>
                             <TableCell className="text-muted-foreground truncate max-w-[100px]">{num.lotteryEventId}</TableCell>
                             <TableCell className="text-muted-foreground text-xs">{new Date(num.purchaseDate).toLocaleDateString()}</TableCell>
                             <TableCell className="text-right">{num.unitsPurchased}</TableCell>
@@ -262,3 +265,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

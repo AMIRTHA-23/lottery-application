@@ -12,9 +12,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Wand2 } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useState } from 'react';
+import { NumberInput } from '@/components/dashboard/number-input';
+import { generateLuckyNumber } from '@/ai/flows/generate-lucky-number';
 
 // Schema generation is a pure function, can be outside.
 const getPurchaseSchema = (gameType: LotteryEvent['gameType'] = '1D') => {
@@ -34,6 +37,7 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  const [isPicking, setIsPicking] = useState(false);
 
   const formSchema = getPurchaseSchema(event.gameType);
 
@@ -44,6 +48,33 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
       unitsPurchased: 1,
     },
   });
+
+  const handleQuickPick = async () => {
+    if (!user) return;
+    setIsPicking(true);
+    try {
+      const result = await generateLuckyNumber({
+        userName: user.displayName || 'player',
+        gameType: event.gameType,
+      });
+      if (result.luckyNumber) {
+        form.setValue('number', result.luckyNumber, { shouldValidate: true });
+        toast({
+          title: 'Your lucky number is here!',
+          description: `The oracle suggests: ${result.luckyNumber}`,
+        });
+      }
+    } catch (error) {
+      console.error('AI Quick Pick failed:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Quick Pick Failed',
+        description: 'The oracle is silent right now. Please try again.',
+      });
+    } finally {
+      setIsPicking(false);
+    }
+  };
 
   const handlePurchase = async (data: PurchaseFormValues) => {
     if (!firestore || !user || !wallet) {
@@ -132,49 +163,62 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
+          <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-8">
+            <div className="space-y-4">
+               <FormField
                 control={form.control}
                 name="number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Your Number ({event.gameType})</FormLabel>
+                    <FormLabel className="text-center block text-muted-foreground">Your Number ({event.gameType})</FormLabel>
                     <FormControl>
-                      <Input placeholder={`Enter ${parseInt(event.gameType.replace('D', ''))} digits`} {...field} />
+                      <NumberInput 
+                        length={parseInt(event.gameType.replace('D', ''))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={field.disabled}
+                      />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-center" />
                   </FormItem>
                 )}
               />
-              <FormField
+              <div className="flex justify-center">
+                 <Button type="button" variant="outline" onClick={handleQuickPick} disabled={isPicking}>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  {isPicking ? 'Consulting the oracle...' : 'AI Quick Pick'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 items-end">
+               <FormField
                 control={form.control}
                 name="unitsPurchased"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Units</FormLabel>
+                    <FormLabel>Units to Purchase</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} />
+                      <Input type="number" min="1" {...field} className="h-12 text-lg" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-
-            <Card className="bg-muted/50">
-                <CardContent className="p-4">
+               <Card className="bg-muted/50">
+                <CardContent className="p-3">
                     <div className="flex justify-between items-center">
-                        <span className="text-lg font-semibold">Total Cost</span>
-                         <span className="text-lg font-bold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalCost)}</span>
+                        <span className="font-semibold">Total Cost</span>
+                         <span className="font-bold text-lg">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalCost)}</span>
                     </div>
                      <div className="text-sm text-muted-foreground text-right mt-1">
                         Balance: {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet?.balance || 0)}
                      </div>
                 </CardContent>
             </Card>
+            </div>
 
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !wallet}>
+            <Button type="submit" size="lg" className="w-full text-lg" disabled={form.formState.isSubmitting || !wallet}>
               {form.formState.isSubmitting ? 'Purchasing...' : 'Confirm Purchase'}
             </Button>
              {!wallet && (

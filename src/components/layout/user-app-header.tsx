@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutGrid, LogOut, User as UserIcon, BookOpen, LifeBuoy, Menu } from 'lucide-react';
+import { LayoutGrid, LogOut, User as UserIcon, BookOpen, LifeBuoy, Menu, Gamepad2 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 
 export function UserAppHeader() {
@@ -63,6 +63,10 @@ export function UserAppHeader() {
             <DropdownMenuItem onClick={() => router.push('/dashboard')}>
               <LayoutGrid className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
+            </DropdownMenuItem>
+             <DropdownMenuItem onClick={() => router.push('/dashboard/sample-game')}>
+              <Gamepad2 className="mr-2 h-4 w-4" />
+              <span>Fun Game</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
               <UserIcon className="mr-2 h-4 w-4" />

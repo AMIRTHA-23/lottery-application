@@ -17,7 +17,8 @@ import {
   Trophy,
   Wallet,
   BookOpen,
-  LifeBuoy
+  LifeBuoy,
+  Gamepad2
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -29,6 +30,7 @@ const menuItems = [
   { href: '/dashboard/play', label: 'Play', icon: Ticket },
   { href: '/dashboard/results', label: 'Results', icon: Trophy },
   { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
+  { href: '/dashboard/sample-game', label: 'Fun Game', icon: Gamepad2 },
   { href: '/dashboard/rules', label: 'Game Rules', icon: BookOpen },
   { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
 ];

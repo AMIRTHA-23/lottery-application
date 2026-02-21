@@ -21,9 +21,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { Input } from '@/components/ui/input';
 
 export default function UsersPage() {
   const firestore = useFirestore();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -31,6 +34,16 @@ export default function UsersPage() {
   }, [firestore]);
 
   const { data: users, isLoading } = useCollection<UserProfile>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!searchQuery.trim()) return users;
+
+    return users.filter(user => 
+        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [users, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -42,6 +55,14 @@ export default function UsersPage() {
           <CardDescription>
             A list of all users in the system. Click on a username to view details.
           </CardDescription>
+           <div className="pt-4">
+            <Input 
+                placeholder="Search by username or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-sm"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -71,8 +92,8 @@ export default function UsersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-              {!isLoading && users && users.length > 0 ? (
-                users.map((user) => (
+              {!isLoading && filteredUsers && filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                        <Link href={`/admin/users/${user.id}`} className="hover:underline text-primary">
@@ -92,7 +113,7 @@ export default function UsersPage() {
                 !isLoading && (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                      No users found.
+                       {searchQuery ? 'No users match your search.' : 'No users found.'}
                     </TableCell>
                   </TableRow>
                 )

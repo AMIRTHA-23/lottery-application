@@ -104,5 +104,3 @@ export interface Announcement {
   content: string;
   createdAt: string;
 }
-
-    

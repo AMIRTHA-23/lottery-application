@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LayoutGrid, LogOut, User as UserIcon, BookOpen, LifeBuoy, Menu, Gamepad2 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { ThemeToggleButton } from '../theme-toggle-button';
 
 export function UserAppHeader() {
   const { user } = useUser();
@@ -41,6 +42,7 @@ export function UserAppHeader() {
       </div>
       
       <div className="flex items-center gap-2 md:gap-4 ml-auto">
+        <ThemeToggleButton />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">

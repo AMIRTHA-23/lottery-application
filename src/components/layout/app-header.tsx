@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSidebar } from '@/components/ui/sidebar';
+import { ThemeToggleButton } from '../theme-toggle-button';
 
 export function AppHeader() {
   const { toggleSidebar } = useSidebar();
@@ -28,6 +29,7 @@ export function AppHeader() {
       </div>
       
       <div className="flex items-center gap-2 md:gap-4">
+         <ThemeToggleButton />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative text-foreground">

@@ -30,7 +30,7 @@ export default function ResultsPage() {
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'lotteryEvents');
+    return query(collection(firestore, 'lotteryEvents'));
   }, [firestore]);
 
   const numbersQuery = useMemoFirebase(() => {

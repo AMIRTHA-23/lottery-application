@@ -7,7 +7,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // For production apps, it's better to use custom claims for admin roles.
+      // In a production environment, use custom claims for robust role management.
       return request.auth != null && request.auth.token.email == 'admin@example.com';
     }
     
@@ -25,10 +25,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // User data
+    // User data collections
     match /users/{userId} {
-      // Admins can list all users and get any individual user.
-      // Owners can only get/write their own document.
+      // Admins can read any user profile, users can only read/write their own.
       allow read: if isAdmin();
       allow get: if isOwner(userId);
       allow write: if isOwner(userId);
@@ -36,26 +35,33 @@ service cloud.firestore {
 
     // User sub-collections
     match /users/{userId}/wallets/{walletId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      // Admins can read/write any wallet, users can only read/write their own.
+      allow read, write: if isOwner(userId) || isAdmin();
     }
     
     match /users/{userId}/wallets/{walletId}/transactions/{transactionId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      // Admins can read/write any transaction, users can only read/write their own.
+      allow read, write: if isOwner(userId) || isAdmin();
     }
 
     match /users/{userId}/lotteryNumbers/{lotteryNumberId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      // Admins can read/write any lottery number, users can only read/write their own.
+      allow read, write: if isOwner(userId) || isAdmin();
     }
     
-    // Admin collection group queries
-    match /{path=**}/transactions/{transaction} {
+    // --- Collection Group Queries for Admin Panel ---
+    // These rules allow admins to perform cross-user queries for analytics.
+    
+    // Allows admin to query all transactions (e.g., for total sales, payouts reports)
+    match /{path=**}/transactions/{transactionId} {
       allow read: if isAdmin();
     }
+    
+    // Allows admin to query all lottery numbers (e.g., for winner calculation)
     match /{path=**}/lotteryNumbers/{lotteryNumberId} {
       allow read: if isAdmin();
     }
   }
 }
+
+    

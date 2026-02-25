@@ -59,6 +59,7 @@ export interface Wallet {
 
 export interface Transaction {
   id: string;
+  userId: string;
   walletId: string;
   transactionDate: string;
   amount: number;

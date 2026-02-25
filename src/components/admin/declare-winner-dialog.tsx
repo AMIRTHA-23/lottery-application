@@ -122,6 +122,7 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
             const transactionRef = doc(collection(firestore, 'users', userId, 'wallets', entry.walletData.id, 'transactions'));
             batch.set(transactionRef, {
                 id: transactionRef.id,
+                userId: userId,
                 walletId: entry.walletData.id,
                 transactionDate: new Date().toISOString(),
                 amount: entry.totalWinnings,

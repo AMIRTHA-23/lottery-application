@@ -76,6 +76,7 @@ export function AddFundsDialog({ isOpen, onOpenChange }: AddFundsDialogProps) {
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'wallets', walletId, 'transactions'));
         batch.set(transactionRef, {
             id: transactionRef.id,
+            userId: user.uid,
             walletId: walletId,
             transactionDate: new Date().toISOString(),
             amount: data.amount,
@@ -139,3 +140,5 @@ export function AddFundsDialog({ isOpen, onOpenChange }: AddFundsDialogProps) {
     </Dialog>
   );
 }
+
+    

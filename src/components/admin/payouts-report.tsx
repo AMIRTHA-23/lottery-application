@@ -49,22 +49,27 @@ export function PayoutsReport() {
 
     const payoutsByEvent = payouts.reduce((acc, payout) => {
       const eventId = payout.lotteryEventId;
-      if (!eventId) return acc;
+      if (!eventId || !payout.userId) return acc;
+
       if (!acc[eventId]) {
-        acc[eventId] = { totalPayout: 0, winnerCount: 0 };
+        acc[eventId] = { totalPayout: 0, winnerIds: new Set<string>() };
       }
+      
       acc[eventId].totalPayout += payout.amount;
-      // This is a simplification; multiple payouts to the same user are counted separately.
-      // A more complex implementation would group by user ID first.
-      acc[eventId].winnerCount += 1; 
+      acc[eventId].winnerIds.add(payout.userId);
+
       return acc;
-    }, {} as Record<string, { totalPayout: number; winnerCount: number }>);
+    }, {} as Record<string, { totalPayout: number; winnerIds: Set<string> }>);
 
     return events
-        .map(event => ({
-            ...event,
-            ...payoutsByEvent[event.id]
-        }))
+        .map(event => {
+            const payoutData = payoutsByEvent[event.id];
+            return {
+                ...event,
+                totalPayout: payoutData?.totalPayout || 0,
+                winnerCount: payoutData?.winnerIds.size || 0,
+            }
+        })
         .filter(data => data.totalPayout > 0)
         .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 

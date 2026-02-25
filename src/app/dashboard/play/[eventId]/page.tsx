@@ -139,6 +139,7 @@ function PlayEventForm({ event, wallet, settings }: { event: LotteryEvent; walle
 
         transaction.set(newTransactionRef, {
             id: newTransactionRef.id,
+            userId: user.uid,
             walletId: wallet.id,
             transactionDate: new Date().toISOString(),
             amount: -totalCost,
@@ -352,3 +353,5 @@ export default function PlayEventPage() {
     </div>
   );
 }
+
+    

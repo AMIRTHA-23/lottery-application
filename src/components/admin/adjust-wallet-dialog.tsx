@@ -69,6 +69,7 @@ export function AdjustWalletDialog({ user, wallet, isOpen, onOpenChange }: Adjus
       const transactionType = data.amount > 0 ? 'Deposit' : 'Withdrawal';
       batch.set(transactionRef, {
         id: transactionRef.id,
+        userId: user.id,
         walletId: wallet.id,
         transactionDate: new Date().toISOString(),
         amount: data.amount,
@@ -142,3 +143,5 @@ export function AdjustWalletDialog({ user, wallet, isOpen, onOpenChange }: Adjus
     </Dialog>
   );
 }
+
+    

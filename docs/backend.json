@@ -190,6 +190,10 @@
           "type": "string",
           "description": "Unique identifier for the transaction."
         },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Transaction)"
+        },
         "walletId": {
           "type": "string",
           "description": "Reference to Wallet. (Relationship: Wallet 1:N Transaction)"
@@ -218,6 +222,7 @@
       },
       "required": [
         "id",
+        "userId",
         "walletId",
         "transactionDate",
         "amount",

@@ -2,33 +2,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // WARNING: TEMPORARY DEBUGGING RULE
-    // The following rule makes your entire database readable by any client.
-    // This is NOT secure and is intended only to diagnose the persistent
-    // permission error. This MUST be secured before any production use.
-    match /{document=**} {
-      allow read: if true;
-    }
-
-    // Secure write rules remain in place.
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
     function isAdmin() {
+      // For production apps, it's better to use custom claims for admin roles.
       return request.auth != null && request.auth.token.email == 'admin@example.com';
     }
 
+    // User data is private and only accessible by the owner.
     match /users/{userId}/{documents=**} {
-      allow write: if isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
     
+    // Lottery Events are readable by any authenticated user, but only writable by admins.
     match /lotteryEvents/{lotteryEventId} {
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
     
+    // Announcements are readable by any authenticated user, but only writable by admins.
     match /announcements/{announcementId} {
+      allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+    
+    // Settings are only readable and writable by admins.
+    match /settings/{settingsId} {
+        allow read, write: if isAdmin();
     }
   }
 }

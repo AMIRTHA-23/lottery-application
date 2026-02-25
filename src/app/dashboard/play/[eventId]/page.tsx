@@ -12,13 +12,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Wand2, Ticket } from 'lucide-react';
+import { Terminal, Wand2 } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState } from 'react';
 import { NumberInput } from '@/components/dashboard/number-input';
 import { generateLuckyNumber } from '@/ai/flows/generate-lucky-number';
-import Image from 'next/image';
+
+// Define fixed prize amounts for larger wins
+const fixedPrizes: { [key: string]: number } = {
+    '1D': 100,
+    '2D': 1000,
+    '3D': 100000,
+    '4D': 500000,
+};
 
 // Schema generation is a pure function, can be outside.
 const getPurchaseSchema = (gameType: LotteryEvent['gameType'] = '1D') => {
@@ -61,7 +68,7 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
     try {
       const result = await generateLuckyNumber({
         userName: user.displayName || 'player',
-        gameType: event.gameType,
+        gameType: event.gameType as '1D' | '2D' | '3D' | '4D',
       });
       if (result.luckyNumber) {
         form.setValue('number', result.luckyNumber, { shouldValidate: true });
@@ -163,6 +170,9 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
   };
 
   const totalCost = (form.watch('unitsPurchased') || 0) * (event.unitPrice || 0);
+  const prize = event.gameType === 'LuckyDraw' 
+    ? event.prize 
+    : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(fixedPrizes[event.gameType as keyof typeof fixedPrizes]);
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -172,12 +182,12 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
                 <CardTitle>Play: {event.name}</CardTitle>
                  {event.gameType === 'LuckyDraw' ? (
                      <CardDescription>
-                        Purchase your ticket to enter the draw for a chance to win: <span className='font-bold text-primary'>{event.prize}</span>!
+                        Purchase your ticket to enter the draw for a chance to win: <span className='font-bold text-primary'>{prize}</span>!
                         Each ticket costs {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)}.
                     </CardDescription>
                  ) : (
                     <CardDescription>
-                      Choose your {parseInt(event.gameType.replace('D', ''))}-digit number and how many units you want to buy.
+                      Choose your {parseInt(event.gameType.replace('D', ''))}-digit number for a chance to win <span className="font-bold text-primary">{prize}</span>.
                       The price is {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)} per unit.
                     </CardDescription>
                  )}
@@ -307,5 +317,3 @@ export default function PlayEventPage() {
     </div>
   );
 }
-
-    

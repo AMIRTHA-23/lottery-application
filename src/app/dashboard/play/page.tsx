@@ -12,6 +12,14 @@ import { Ticket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+// Define fixed prize amounts for larger wins
+const fixedPrizes: { [key: string]: number } = {
+    '1D': 100,
+    '2D': 1000,
+    '3D': 100000,
+    '4D': 500000,
+};
+
 export default function PlayPage() {
     const firestore = useFirestore();
 
@@ -36,7 +44,11 @@ export default function PlayPage() {
         }, {} as Record<string, LotteryEvent[]>);
     }, [allEvents]);
     
-    const gameTypes = Object.keys(eventsByGameType).sort();
+    const gameTypes = Object.keys(eventsByGameType).sort((a,b) => {
+        if (a === 'LuckyDraw') return 1;
+        if (b === 'LuckyDraw') return -1;
+        return a.localeCompare(b);
+    });
 
 
     return (
@@ -62,7 +74,7 @@ export default function PlayPage() {
                 </div>
             ) : gameTypes.length > 0 ? (
                 <Tabs defaultValue={gameTypes[0]} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-4">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-4">
                         {gameTypes.map(type => (
                             <TabsTrigger key={type} value={type}>{type}</TabsTrigger>
                         ))}
@@ -72,29 +84,38 @@ export default function PlayPage() {
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 {eventsByGameType[type]
                                     .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
-                                    .map((event) => (
-                                    <Card key={event.id}>
-                                        <CardHeader>
-                                            <CardTitle className="flex justify-between items-center">
-                                                {event.name}
-                                                <Badge variant="success">{event.gameType}</Badge>
-                                            </CardTitle>
-                                            <CardDescription>Draw on: {new Date(event.eventDate).toLocaleDateString()}</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className="text-muted-foreground">Price per unit</span>
-                                                <span className="font-semibold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)}</span>
-                                            </div>
-                                            <Button asChild className="w-full">
-                                                <Link href={`/dashboard/play/${event.id}`}>
-                                                    <Ticket className="mr-2 h-4 w-4" />
-                                                    Place Bet
-                                                </Link>
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                    .map((event) => {
+                                        const prize = event.gameType === 'LuckyDraw' 
+                                            ? event.prize 
+                                            : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(fixedPrizes[event.gameType as keyof typeof fixedPrizes]);
+                                        return (
+                                            <Card key={event.id}>
+                                                <CardHeader>
+                                                    <CardTitle className="flex justify-between items-center">
+                                                        {event.name}
+                                                        <Badge variant="success">{event.gameType}</Badge>
+                                                    </CardTitle>
+                                                    <CardDescription>Draw on: {new Date(event.eventDate).toLocaleDateString()}</CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-4">
+                                                    <div className="flex justify-between items-center font-semibold text-lg text-primary">
+                                                        <span>Win</span>
+                                                        <span>{prize}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="text-muted-foreground">Price per unit</span>
+                                                        <span className="font-semibold">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)}</span>
+                                                    </div>
+                                                    <Button asChild className="w-full">
+                                                        <Link href={`/dashboard/play/${event.id}`}>
+                                                            <Ticket className="mr-2 h-4 w-4" />
+                                                            Place Bet
+                                                        </Link>
+                                                    </Button>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
                             </div>
                         </TabsContent>
                     ))}

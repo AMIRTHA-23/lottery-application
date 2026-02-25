@@ -13,6 +13,15 @@ import { useFirestore } from '@/firebase';
 import { doc, updateDoc, collectionGroup, query, where, getDocs, writeBatch, limit, collection } from 'firebase/firestore';
 import { useEffect } from 'react';
 
+// Define fixed prize amounts for larger wins
+const fixedPrizes: { [key: string]: number } = {
+    '1D': 100,
+    '2D': 1000,
+    '3D': 100000,
+    '4D': 500000,
+};
+
+
 const getWinnerSchema = (gameType: LotteryEvent['gameType']) => {
     if (gameType === 'LuckyDraw') {
       return z.object({
@@ -24,6 +33,13 @@ const getWinnerSchema = (gameType: LotteryEvent['gameType']) => {
         result: z.string().length(digitCount, { message: `Winning number must be ${digitCount} digits.` }).regex(/^\d+$/, "Must be a number."),
     });
 }
+
+interface DeclareWinnerDialogProps {
+    event: LotteryEvent | null;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+}
+
 
 export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinnerDialogProps) {
   const firestore = useFirestore();
@@ -63,8 +79,12 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
             return { winnersCount: 0, totalPayout: 0 };
         }
 
-        const multipliers: { [key: string]: number } = { '1D': 8, '2D': 80, '3D': 800, '4D': 8000 };
-        const multiplier = multipliers[event.gameType] || 1;
+        const payoutAmount = fixedPrizes[event.gameType as keyof typeof fixedPrizes];
+
+        if (!payoutAmount) {
+            toast({ variant: 'destructive', title: "Configuration Error", description: `No prize amount configured for game type: ${event.gameType}`});
+            return { winnersCount: 0, totalPayout: 0 };
+        }
 
         const batch = writeBatch(firestore);
         let totalPayout = 0;
@@ -88,8 +108,8 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
                     walletData: walletDoc.data() as Wallet
                 };
             }
-
-            const winnings = winnerDoc.unitsPurchased * winnerDoc.unitPrice * multiplier;
+            // Payout is the fixed prize amount multiplied by the units purchased
+            const winnings = payoutAmount * winnerDoc.unitsPurchased;
             winningEntriesByUser[userId].totalWinnings += winnings;
             totalPayout += winnings;
         }
@@ -130,19 +150,9 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
 
     try {
         const eventRef = doc(firestore, 'lotteryEvents', event.id);
-        await updateDoc(eventRef, {
-            result: data.result,
-            status: 'Completed',
-            isEnabled: false,
-        });
-
-        toast({
-            title: 'Winner Declared!',
-            description: `The result for "${event.name}" is ${data.result}.`,
-        });
         
         if (event.gameType !== 'LuckyDraw') {
-            toast({ description: "Processing payouts for winners..." });
+            toast({ description: "Declaring result and processing payouts..." });
             const payoutResult = await handlePayouts(event, data.result);
              if (payoutResult.winnersCount > 0) {
                 toast({
@@ -158,6 +168,18 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
                 description: `Winner is holder of ticket: ${data.result}. Manual prize distribution required.`
             });
         }
+        
+        // Update event status after payouts
+        await updateDoc(eventRef, {
+            result: data.result,
+            status: 'Completed',
+            isEnabled: false,
+        });
+
+        toast({
+            title: 'Winner Declared!',
+            description: `The result for "${event.name}" is ${data.result}.`,
+        });
 
         onOpenChange(false);
     } catch(e: any) {

@@ -98,6 +98,7 @@ export interface UserProfile {
   email: string;
   phoneNumber: string;
   registrationDate: string;
+  status?: 'Active' | 'Frozen';
 }
 
 export interface Announcement {
@@ -114,5 +115,3 @@ export interface AppSettings {
   prize3D: number;
   prize4D: number;
 }
-
-    

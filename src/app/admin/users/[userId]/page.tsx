@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useFirestore, useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useCollection, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc, query, limit, orderBy } from 'firebase/firestore';
 import type { UserProfile, Wallet, Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,15 +9,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { AdjustWalletDialog } from '@/components/admin/adjust-wallet-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UserDetailPage() {
   const { userId } = useParams();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   const [isAdjustWalletOpen, setAdjustWalletOpen] = useState(false);
 
   // Fetch User Profile
@@ -41,6 +43,17 @@ export default function UserDetailPage() {
     return query(collection(firestore, 'users', userId as string, 'wallets', wallet.id, 'transactions'), orderBy('transactionDate', 'desc'));
   }, [firestore, userId, wallet]);
   const { data: transactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
+
+  const handleToggleFreeze = () => {
+    if (!firestore || !user) return;
+    const userDocRef = doc(firestore, 'users', user.id);
+    const newStatus = user.status === 'Frozen' ? 'Active' : 'Frozen';
+    updateDocumentNonBlocking(userDocRef, { status: newStatus });
+    toast({
+        title: `Account ${newStatus}`,
+        description: `User ${user.username} has been ${newStatus.toLowerCase()}.`,
+    });
+  };
 
   const isLoading = isUserLoading || isWalletsLoading;
 
@@ -81,23 +94,32 @@ export default function UserDetailPage() {
     }
   }
 
-
   return (
     <>
     {user && wallet && <AdjustWalletDialog user={user} wallet={wallet} isOpen={isAdjustWalletOpen} onOpenChange={setAdjustWalletOpen} />}
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => router.push('/admin/users')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{user.username}</h1>
-          <p className="text-muted-foreground">{user.email}</p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.push('/admin/users')}>
+            <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+            <h1 className="text-3xl font-bold tracking-tight">{user.username}</h1>
+            <p className="text-muted-foreground">{user.email}</p>
+            </div>
+        </div>
+        <div className="flex gap-2">
+            <Badge variant={user.status === 'Frozen' ? 'destructive' : 'success'}>
+                {user.status || 'Active'}
+            </Badge>
+            <Button variant="outline" size="sm" onClick={handleToggleFreeze}>
+                {user.status === 'Frozen' ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
+                {user.status === 'Frozen' ? 'Unfreeze Account' : 'Freeze Account'}
+            </Button>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Profile Card */}
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle>User Profile</CardTitle>
@@ -105,12 +127,11 @@ export default function UserDetailPage() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="font-medium">First Name:</span> <span className="text-muted-foreground">{user.firstName}</span></div>
             <div className="flex justify-between"><span className="font-medium">Last Name:</span> <span className="text-muted-foreground">{user.lastName}</span></div>
-            <div className="flex justify-between"><span className="font-medium">Phone Number:</span> <span className="text-muted-foreground">{user.phoneNumber || 'N/A'}</span></div>
+            <div className="flex justify-between"><span className="font-medium">Phone:</span> <span className="text-muted-foreground">{user.phoneNumber || 'N/A'}</span></div>
             <div className="flex justify-between"><span className="font-medium">Registered:</span> <span className="text-muted-foreground">{new Date(user.registrationDate).toLocaleDateString()}</span></div>
           </CardContent>
         </Card>
 
-        {/* Wallet Card */}
         <Card className="md:col-span-2">
            <CardHeader>
             <CardTitle>Wallet</CardTitle>
@@ -135,7 +156,6 @@ export default function UserDetailPage() {
         </Card>
       </div>
 
-      {/* Transactions Table */}
       <Card>
         <CardHeader>
           <CardTitle>Transaction History</CardTitle>

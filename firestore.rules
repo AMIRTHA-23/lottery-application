@@ -17,10 +17,21 @@ service cloud.firestore {
       allow list: if isAdmin();
     }
 
-    // User data is private, but readable by admins.
-    match /users/{userId}/{documents=**} {
-      allow read: if isOwner(userId) || isAdmin();
+    // This rule allows admins to query across all 'lotteryNumbers' collections to find winners for payouts.
+    match /{path=**}/lotteryNumbers/{lotteryNumberId} {
+      allow list: if isAdmin();
+    }
+
+    // User data is private, but readable by admins for management purposes.
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin(); // Admins can list users for the user management page.
       allow write: if isOwner(userId);
+    }
+    
+    // Rules for user sub-collections (wallets, transactions, etc.)
+    match /users/{userId}/{documents=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
     }
     
     // Lottery Events are readable by any authenticated user, but only writable by admins.

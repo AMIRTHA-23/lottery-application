@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
 import type { Transaction } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,16 +18,27 @@ export default function AdminDashboardPage() {
     netProfit: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!firestore) return;
 
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         // Fetch transactions
         const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
-        const transactionsSnapshot = await getDocs(transactionsQuery);
+        const transactionsSnapshot = await getDocs(transactionsQuery)
+          .catch((serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: 'transactions (collection group)',
+              operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+          });
+
         let sales = 0;
         let payouts = 0;
         transactionsSnapshot.forEach((doc) => {
@@ -41,7 +52,15 @@ export default function AdminDashboardPage() {
 
         // Fetch users
         const usersQuery = query(collection(firestore, 'users'));
-        const usersSnapshot = await getDocs(usersQuery);
+        const usersSnapshot = await getDocs(usersQuery)
+          .catch((serverError) => {
+            const permissionError = new FirestorePermissionError({
+              path: 'users',
+              operation: 'list',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            throw permissionError;
+          });
         const usersCount = usersSnapshot.size;
 
         setStats({
@@ -50,8 +69,8 @@ export default function AdminDashboardPage() {
           activeUsers: usersCount,
           netProfit: sales - payouts,
         });
-      } catch (error) {
-        console.error('Failed to fetch admin dashboard stats:', error);
+      } catch (err) {
+        setError("Failed to load dashboard data due to a permissions issue.");
       } finally {
         setIsLoading(false);
       }
@@ -88,6 +107,22 @@ export default function AdminDashboardPage() {
       icon: TrendingUp,
     },
   ];
+  
+  if (error) {
+      return (
+          <div className="flex items-center justify-center h-full p-4">
+              <Card className="w-full max-w-md">
+                  <CardHeader>
+                      <CardTitle className="text-destructive">Error Loading Data</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p>{error}</p>
+                      <p className="text-muted-foreground mt-2 text-sm">This is likely due to Firestore security rules. An admin needs read access to user collections for the dashboard to work. Please check the developer console for more details.</p>
+                  </CardContent>
+              </Card>
+          </div>
+      )
+  }
 
   return (
     <div className="space-y-6">

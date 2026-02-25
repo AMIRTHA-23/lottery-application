@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { NumberInput } from '@/components/dashboard/number-input';
 import { generateLuckyNumber } from '@/ai/flows/generate-lucky-number';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 // Schema generation is a pure function, can be outside.
 const getPurchaseSchema = (gameType: LotteryEvent['gameType'] = '1D') => {
@@ -351,5 +352,3 @@ export default function PlayEventPage() {
     </div>
   );
 }
-
-    

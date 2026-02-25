@@ -34,18 +34,22 @@ export function PayoutsReport() {
     );
   }, [firestore]);
 
-  const payoutsQuery = useMemoFirebase(() => {
+  const allTransactionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collectionGroup(firestore, 'transactions'), where('type', '==', 'Payout'));
+    // Fetch all transactions from the group; we'll filter client-side
+    return query(collectionGroup(firestore, 'transactions'));
   }, [firestore]);
 
   const { data: events, isLoading: isLoadingEvents } = useCollection<LotteryEvent>(eventsQuery);
-  const { data: payouts, isLoading: isLoadingPayouts } = useCollection<Transaction>(payoutsQuery);
+  const { data: allTransactions, isLoading: isLoadingPayouts } = useCollection<Transaction>(allTransactionsQuery);
 
   const isLoading = isLoadingEvents || isLoadingPayouts;
 
   const reportData = useMemo(() => {
-    if (!events || !payouts) return [];
+    if (!events || !allTransactions) return [];
+    
+    // Filter for payout transactions on the client
+    const payouts = allTransactions.filter(tx => tx.type === 'Payout');
 
     const payoutsByEvent = payouts.reduce((acc, payout) => {
       const eventId = payout.lotteryEventId;
@@ -73,7 +77,7 @@ export function PayoutsReport() {
         .filter(data => data.totalPayout > 0)
         .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 
-  }, [events, payouts]);
+  }, [events, allTransactions]);
 
   return (
     <Card>
@@ -129,5 +133,3 @@ export function PayoutsReport() {
     </Card>
   );
 }
-
-    

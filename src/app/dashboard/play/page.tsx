@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { LotteryEvent } from '@/lib/types';
+import { useFirestore, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type { LotteryEvent, AppSettings } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,6 @@ import { Ticket } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Define fixed prize amounts for larger wins
-const fixedPrizes: { [key: string]: number } = {
-    '1D': 100,
-    '2D': 1000,
-    '3D': 100000,
-    '4D': 500000,
-};
 
 export default function PlayPage() {
     const firestore = useFirestore();
@@ -28,7 +21,12 @@ export default function PlayPage() {
         return collection(firestore, 'lotteryEvents');
     }, [firestore]);
 
-    const { data: allEvents, isLoading } = useCollection<LotteryEvent>(eventsQuery);
+    const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'app') : null, [firestore]);
+
+    const { data: allEvents, isLoading: isLoadingEvents } = useCollection<LotteryEvent>(eventsQuery);
+    const { data: settings, isLoading: isLoadingSettings } = useDoc<AppSettings>(settingsRef);
+    
+    const isLoading = isLoadingEvents || isLoadingSettings;
 
     const eventsByGameType = useMemo(() => {
         if (!allEvents) return {};
@@ -49,6 +47,23 @@ export default function PlayPage() {
         if (b === 'LuckyDraw') return -1;
         return a.localeCompare(b);
     });
+    
+    const getPrize = (gameType: LotteryEvent['gameType'], eventPrize: string | undefined) => {
+        if (gameType === 'LuckyDraw') return eventPrize;
+        if (!settings) return '...';
+        
+        const prizeMap: { [key: string]: number } = {
+            '1D': settings.prize1D,
+            '2D': settings.prize2D,
+            '3D': settings.prize3D,
+            '4D': settings.prize4D,
+        };
+
+        const amount = prizeMap[gameType];
+        if (amount === undefined) return '...';
+        
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+    }
 
 
     return (
@@ -85,9 +100,7 @@ export default function PlayPage() {
                                 {eventsByGameType[type]
                                     .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
                                     .map((event) => {
-                                        const prize = event.gameType === 'LuckyDraw' 
-                                            ? event.prize 
-                                            : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(fixedPrizes[event.gameType as keyof typeof fixedPrizes]);
+                                        const prize = getPrize(event.gameType, event.prize);
                                         return (
                                             <Card key={event.id}>
                                                 <CardHeader>
@@ -129,3 +142,5 @@ export default function PlayPage() {
         </div>
     );
 }
+
+    

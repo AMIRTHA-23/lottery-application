@@ -1,0 +1,128 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, collectionGroup, where } from 'firebase/firestore';
+import type { LotteryEvent, Transaction } from '@/lib/types';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+
+export function PayoutsReport() {
+  const firestore = useFirestore();
+
+  const eventsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    // Only fetch completed, non-luckydraw events, as they are the only ones with auto-payouts
+    return query(
+      collection(firestore, 'lotteryEvents'), 
+      where('status', '==', 'Completed'),
+      where('gameType', '!=', 'LuckyDraw')
+    );
+  }, [firestore]);
+
+  const payoutsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'transactions'), where('type', '==', 'Payout'));
+  }, [firestore]);
+
+  const { data: events, isLoading: isLoadingEvents } = useCollection<LotteryEvent>(eventsQuery);
+  const { data: payouts, isLoading: isLoadingPayouts } = useCollection<Transaction>(payoutsQuery);
+
+  const isLoading = isLoadingEvents || isLoadingPayouts;
+
+  const reportData = useMemo(() => {
+    if (!events || !payouts) return [];
+
+    const payoutsByEvent = payouts.reduce((acc, payout) => {
+      const eventId = payout.lotteryEventId;
+      if (!eventId) return acc;
+      if (!acc[eventId]) {
+        acc[eventId] = { totalPayout: 0, winnerCount: 0 };
+      }
+      acc[eventId].totalPayout += payout.amount;
+      // This is a simplification; multiple payouts to the same user are counted separately.
+      // A more complex implementation would group by user ID first.
+      acc[eventId].winnerCount += 1; 
+      return acc;
+    }, {} as Record<string, { totalPayout: number; winnerCount: number }>);
+
+    return events
+        .map(event => ({
+            ...event,
+            ...payoutsByEvent[event.id]
+        }))
+        .filter(data => data.totalPayout > 0)
+        .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+
+  }, [events, payouts]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Payouts by Event</CardTitle>
+        <CardDescription>
+          A summary of total payouts for each completed event.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Event Name</TableHead>
+              <TableHead>Winning Number</TableHead>
+              <TableHead className="text-right">Winners</TableHead>
+              <TableHead className="text-right">Total Payout</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                </TableRow>
+              ))}
+            {!isLoading && reportData.length > 0 ? (
+              reportData.map((data) => (
+                <TableRow key={data.id}>
+                  <TableCell className="font-medium">{data.name}</TableCell>
+                  <TableCell className="font-mono">{data.result}</TableCell>
+                   <TableCell className="text-right">{data.winnerCount || 0}</TableCell>
+                  <TableCell className="text-right font-semibold text-green-500">
+                    {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(data.totalPayout || 0)}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    No payout data to report.
+                  </TableCell>
+                </TableRow>
+              )
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+    

@@ -2,7 +2,7 @@
 
 import { useFirestore, useDoc, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, limit, runTransaction } from 'firebase/firestore';
-import type { LotteryEvent, Wallet } from '@/lib/types';
+import type { LotteryEvent, Wallet, AppSettings } from '@/lib/types';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,20 +12,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Wand2 } from 'lucide-react';
+import { Terminal, Wand2, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState } from 'react';
 import { NumberInput } from '@/components/dashboard/number-input';
 import { generateLuckyNumber } from '@/ai/flows/generate-lucky-number';
-
-// Define fixed prize amounts for larger wins
-const fixedPrizes: { [key: string]: number } = {
-    '1D': 100,
-    '2D': 1000,
-    '3D': 100000,
-    '4D': 500000,
-};
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Schema generation is a pure function, can be outside.
 const getPurchaseSchema = (gameType: LotteryEvent['gameType'] = '1D') => {
@@ -45,7 +38,7 @@ type PurchaseFormValues = z.infer<ReturnType<typeof getPurchaseSchema>>;
 
 // This new component will contain the form logic.
 // It only renders when `event` is available, ensuring `useForm` gets the right resolver.
-function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet | undefined }) {
+function PlayEventForm({ event, wallet, settings }: { event: LotteryEvent; wallet: Wallet | undefined, settings: AppSettings | null }) {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -170,27 +163,49 @@ function PlayEventForm({ event, wallet }: { event: LotteryEvent; wallet: Wallet 
   };
 
   const totalCost = (form.watch('unitsPurchased') || 0) * (event.unitPrice || 0);
-  const prize = event.gameType === 'LuckyDraw' 
-    ? event.prize 
-    : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(fixedPrizes[event.gameType as keyof typeof fixedPrizes]);
+
+  const getPrize = () => {
+    if (event.gameType === 'LuckyDraw') return event.prize;
+    if (!settings) return '...';
+    
+    const prizeMap: { [key: string]: number } = {
+        '1D': settings.prize1D,
+        '2D': settings.prize2D,
+        '3D': settings.prize3D,
+        '4D': settings.prize4D,
+    };
+
+    const amount = prizeMap[event.gameType];
+    if (amount === undefined) return '...';
+    
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+  }
+  
+  const prize = getPrize();
 
   return (
     <Card className="max-w-2xl mx-auto">
        <Form {...form}>
           <form onSubmit={form.handleSubmit(handlePurchase)}>
               <CardHeader>
-                <CardTitle>Play: {event.name}</CardTitle>
-                 {event.gameType === 'LuckyDraw' ? (
-                     <CardDescription>
-                        Purchase your ticket to enter the draw for a chance to win: <span className='font-bold text-primary'>{prize}</span>!
-                        Each ticket costs {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)}.
-                    </CardDescription>
-                 ) : (
-                    <CardDescription>
-                      Choose your {parseInt(event.gameType.replace('D', ''))}-digit number for a chance to win <span className="font-bold text-primary">{prize}</span>.
-                      The price is {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(event.unitPrice)} per unit.
-                    </CardDescription>
-                 )}
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Play: {event.name}</CardTitle>
+                        {event.gameType === 'LuckyDraw' ? (
+                            <CardDescription>
+                                Purchase a ticket for a chance to win: <span className='font-bold text-primary'>{prize}</span>!
+                            </CardDescription>
+                        ) : (
+                            <CardDescription>
+                                Choose a {parseInt(event.gameType.replace('D', ''))}-digit number for a chance to win <span className="font-bold text-primary">{prize}</span>.
+                            </CardDescription>
+                        )}
+                    </div>
+                    <Badge variant="outline" className="flex gap-2">
+                        <PartyPopper className="h-4 w-4 text-primary" />
+                        Win {prize}
+                    </Badge>
+                </div>
               </CardHeader>
               <CardContent className="space-y-8">
                  {event.gameType !== 'LuckyDraw' && (
@@ -288,8 +303,27 @@ export default function PlayEventPage() {
   const { data: wallets, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
   const wallet = wallets?.[0];
 
-  if (isEventLoading || isWalletLoading) {
-    return <div className="container py-6">Loading game...</div>;
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'app') : null, [firestore]);
+  const { data: settings, isLoading: isSettingsLoading } = useDoc<AppSettings>(settingsRef);
+
+  if (isEventLoading || isWalletLoading || isSettingsLoading) {
+    return (
+        <div className="container py-6 max-w-2xl mx-auto">
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent className="space-y-8">
+                     <Skeleton className="h-16 w-full" />
+                     <Skeleton className="h-24 w-full" />
+                </CardContent>
+                <CardFooter>
+                    <Skeleton className="h-12 w-full" />
+                </CardFooter>
+            </Card>
+        </div>
+    );
   }
 
   if (!event) {
@@ -313,7 +347,9 @@ export default function PlayEventPage() {
 
   return (
     <div className="container py-6">
-      <PlayEventForm event={event} wallet={wallet} />
+      <PlayEventForm event={event} wallet={wallet} settings={settings}/>
     </div>
   );
 }
+
+    

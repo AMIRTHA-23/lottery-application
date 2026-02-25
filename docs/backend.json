@@ -210,6 +210,10 @@
         "description": {
           "type": "string",
           "description": "A description of the transaction."
+        },
+        "lotteryEventId": {
+            "type": "string",
+            "description": "Reference to LotteryEvent for 'Payout' transactions."
         }
       },
       "required": [
@@ -246,6 +250,40 @@
         }
       },
       "required": ["id", "title", "content", "createdAt"]
+    },
+     "AppSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Application Settings",
+      "type": "object",
+      "description": "Stores global configuration for the application, such as prize amounts.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "prize1D": {
+          "type": "number",
+          "description": "Prize amount for a 1D win."
+        },
+        "prize2D": {
+          "type": "number",
+          "description": "Prize amount for a 2D win."
+        },
+        "prize3D": {
+          "type": "number",
+          "description": "Prize amount for a 3D win."
+        },
+        "prize4D": {
+          "type": "number",
+          "description": "Prize amount for a 4D win."
+        }
+      },
+      "required": [
+        "id",
+        "prize1D",
+        "prize2D",
+        "prize3D",
+        "prize4D"
+      ]
     }
   },
   "auth": {
@@ -367,9 +405,25 @@
             }
           ]
         }
+      },
+      {
+        "path": "/settings/{settingsId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AppSettings"
+          },
+          "description": "Stores global application settings. Write access is restricted to admins. Should only contain one document with a known ID (e.g., 'app').",
+          "params": [
+            {
+              "name": "settingsId",
+              "description": "The unique identifier for the settings document, typically 'app'."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to provide a secure, scalable, and debuggable solution for the SMSWIN Lottery app. It prioritizes authorization independence by avoiding hierarchical dependencies and denormalizing authorization data. The structure is segregated to ensure homogeneous security postures within collections, and access is modeled consistently using path-based ownership for user-specific data.\n\n*   **Users Collection:** Stores user profiles. Access is restricted to the user themselves (path-based ownership).\n*   **Wallets Collection:** Stores user wallets, located under each user document for path-based ownership.\n*   **LotteryEvents Collection:** Stores global lottery event data.  Publicly readable, but write access restricted to admins.\n*   **LotteryNumbers Collection:** Stores lottery numbers purchased by users, located under each user document for path-based ownership. This facilitates easy retrieval of a user's purchased numbers.\n*   **Transactions Collection:** Stores transaction history for user wallets, located under each wallet document to provide proper separation of concerns, continuing the existing ownership hierarchy.\n*   **Announcements Collection:** Stores global announcements. Publicly readable, write access restricted to admins.\n\nThis structure ensures Authorization Independence by relying solely on `request.auth.uid` and avoiding `get()` calls in security rules.  It also supports the required QAPs by:\n\n*   **Path-Based Ownership:** Enforces clear ownership rules, making `list` operations secure and efficient, as users can only access their own data.\n*   **Segregation:** Separates user-specific data from global and admin-only data, allowing for different security rules to be applied to each.\n\nThe use of hierarchical paths for user-owned data (e.g., `/users/{userId}/wallets/{walletId}`) ensures strong ownership-based security. Denormalization is employed by potentially including user id fields in nested collections where necessary to avoid complex `get()` calls in security rules."
+    "reasoning": "The Firestore data structure is designed to provide a secure, scalable, and debuggable solution for the SMSWIN Lottery app. It prioritizes authorization independence by avoiding hierarchical dependencies and denormalizing authorization data. The structure is segregated to ensure homogeneous security postures within collections, and access is modeled consistently using path-based ownership for user-specific data.\n\n*   **Users Collection:** Stores user profiles. Access is restricted to the user themselves (path-based ownership).\n*   **Wallets Collection:** Stores user wallets, located under each user document for path-based ownership.\n*   **LotteryEvents Collection:** Stores global lottery event data.  Publicly readable, but write access restricted to admins.\n*   **LotteryNumbers Collection:** Stores lottery numbers purchased by users, located under each user document for path-based ownership. This facilitates easy retrieval of a user's purchased numbers.\n*   **Transactions Collection:** Stores transaction history for user wallets, located under each wallet document to provide proper separation of concerns, continuing the existing ownership hierarchy.\n*   **Announcements Collection:** Stores global announcements. Publicly readable, write access restricted to admins.\n*   **Settings Collection:** A new singleton collection to store global, configurable application settings like prize structures, making them manageable by admins without code changes.\n\nThis structure ensures Authorization Independence by relying solely on `request.auth.uid` and avoiding `get()` calls in security rules.  It also supports the required QAPs by:\n\n*   **Path-Based Ownership:** Enforces clear ownership rules, making `list` operations secure and efficient, as users can only access their own data.\n*   **Segregation:** Separates user-specific data from global and admin-only data, allowing for different security rules to be applied to each.\n\nThe use of hierarchical paths for user-owned data (e.g., `/users/{userId}/wallets/{walletId}`) ensures strong ownership-based security. Denormalization is employed by potentially including user id fields in nested collections where necessary to avoid complex `get()` calls in security rules."
   }
 }
 

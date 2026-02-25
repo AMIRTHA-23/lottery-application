@@ -64,6 +64,7 @@ export interface Transaction {
   amount: number;
   type: 'Deposit' | 'Withdrawal' | 'Purchase' | 'Payout';
   description: string;
+  lotteryEventId?: string;
 }
 
 export interface LotteryNumber {
@@ -104,3 +105,13 @@ export interface Announcement {
   content: string;
   createdAt: string;
 }
+
+export interface AppSettings {
+  id: string;
+  prize1D: number;
+  prize2D: number;
+  prize3D: number;
+  prize4D: number;
+}
+
+    

@@ -8,19 +8,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { LotteryEvent, LotteryNumber, Wallet } from '@/lib/types';
-import { useFirestore } from '@/firebase';
+import type { LotteryEvent, LotteryNumber, Wallet, AppSettings } from '@/lib/types';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc, collectionGroup, query, where, getDocs, writeBatch, limit, collection } from 'firebase/firestore';
 import { useEffect } from 'react';
-
-// Define fixed prize amounts for larger wins
-const fixedPrizes: { [key: string]: number } = {
-    '1D': 100,
-    '2D': 1000,
-    '3D': 100000,
-    '4D': 500000,
-};
-
 
 const getWinnerSchema = (gameType: LotteryEvent['gameType']) => {
     if (gameType === 'LuckyDraw') {
@@ -45,6 +36,9 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
   const firestore = useFirestore();
   const { toast } = useToast();
   
+  const settingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'settings', 'app') : null, [firestore]);
+  const { data: settings, isLoading: isLoadingSettings } = useDoc<AppSettings>(settingsRef);
+
   const formSchema = getWinnerSchema(event?.gameType || '1D');
   type WinnerFormValues = z.infer<typeof formSchema>;
 
@@ -60,7 +54,7 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
     form.reset();
   }, [isOpen, event, form]);
 
-  const handlePayouts = async (event: LotteryEvent, winningNumber: string) => {
+  const handlePayouts = async (event: LotteryEvent, winningNumber: string, appSettings: AppSettings) => {
     if (!firestore) return { winnersCount: 0, totalPayout: 0 };
     
     const lotteryNumbersRef = collectionGroup(firestore, 'lotteryNumbers');
@@ -78,10 +72,16 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
             toast({ title: "No winners for this event.", description: "No payouts were processed." });
             return { winnersCount: 0, totalPayout: 0 };
         }
+        
+        const prizeMap: { [key: string]: number } = {
+            '1D': appSettings.prize1D,
+            '2D': appSettings.prize2D,
+            '3D': appSettings.prize3D,
+            '4D': appSettings.prize4D,
+        };
+        const payoutAmount = prizeMap[event.gameType as keyof typeof prizeMap];
 
-        const payoutAmount = fixedPrizes[event.gameType as keyof typeof fixedPrizes];
-
-        if (!payoutAmount) {
+        if (payoutAmount === undefined) {
             toast({ variant: 'destructive', title: "Configuration Error", description: `No prize amount configured for game type: ${event.gameType}`});
             return { winnersCount: 0, totalPayout: 0 };
         }
@@ -127,6 +127,7 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
                 amount: entry.totalWinnings,
                 type: 'Payout',
                 description: `Winnings for ${event.name} (Number: ${winningNumber})`,
+                lotteryEventId: event.id
             });
         }
 
@@ -146,14 +147,22 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
 
 
   const onSubmit = async (data: WinnerFormValues) => {
-    if (!firestore || !event) return;
+    if (!firestore || !event || !settings) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Missing required data to declare winner.' });
+        return;
+    }
+
+    if (event.status !== 'Open') {
+        toast({ variant: 'destructive', title: 'Event Not Open', description: 'This event is already closed or completed.' });
+        return;
+    }
 
     try {
         const eventRef = doc(firestore, 'lotteryEvents', event.id);
         
         if (event.gameType !== 'LuckyDraw') {
             toast({ description: "Declaring result and processing payouts..." });
-            const payoutResult = await handlePayouts(event, data.result);
+            const payoutResult = await handlePayouts(event, data.result, settings);
              if (payoutResult.winnersCount > 0) {
                 toast({
                     variant: "success",
@@ -196,6 +205,7 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
   if (!event) return null;
   
   const isLuckyDraw = event.gameType === 'LuckyDraw';
+  const isSubmitting = form.formState.isSubmitting || isLoadingSettings;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -225,8 +235,8 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
             />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Processing...' : 'Declare Winner'}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Processing...' : 'Declare Winner'}
               </Button>
             </DialogFooter>
           </form>
@@ -235,3 +245,5 @@ export function DeclareWinnerDialog({ event, isOpen, onOpenChange }: DeclareWinn
     </Dialog>
   );
 }
+
+    

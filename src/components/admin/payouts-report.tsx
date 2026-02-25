@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, collectionGroup, where } from 'firebase/firestore';
+import { collection, query, collectionGroup } from 'firebase/firestore';
 import type { LotteryEvent, Transaction } from '@/lib/types';
 import {
   Table,
@@ -24,28 +24,29 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function PayoutsReport() {
   const firestore = useFirestore();
 
-  // 1. Fetch Completed Events (The basis for payouts)
+  // 1. Fetch Completed Events
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(
-      collection(firestore, 'lotteryEvents'), 
-      where('status', '==', 'Completed')
-    );
+    return query(collection(firestore, 'lotteryEvents'));
   }, [firestore]);
-  const { data: events, isLoading: isLoadingEvents } = useCollection<LotteryEvent>(eventsQuery);
+  const { data: allEvents, isLoading: isLoadingEvents } = useCollection<LotteryEvent>(eventsQuery);
 
   // 2. Fetch Payout Transactions (Via Collection Group)
+  // We fetch all and filter client-side to avoid complex index requirements for simple queries
   const transactionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collectionGroup(firestore, 'transactions'), where('type', '==', 'Payout'));
+    return query(collectionGroup(firestore, 'transactions'));
   }, [firestore]);
-  const { data: payouts, isLoading: isLoadingPayouts } = useCollection<Transaction>(transactionsQuery);
+  const { data: allTransactions, isLoading: isLoadingPayouts } = useCollection<Transaction>(transactionsQuery);
 
   const isLoading = isLoadingEvents || isLoadingPayouts;
 
   const reportData = useMemo(() => {
-    if (!events || !payouts) return [];
+    if (!allEvents || !allTransactions) return [];
     
+    const completedEvents = allEvents.filter(e => e.status === 'Completed');
+    const payouts = allTransactions.filter(tx => tx.type === 'Payout');
+
     // Group payouts by eventId
     const payoutsByEvent = payouts.reduce((acc, payout) => {
       const eventId = payout.lotteryEventId;
@@ -61,7 +62,7 @@ export function PayoutsReport() {
       return acc;
     }, {} as Record<string, { totalPayout: number; winners: Set<string> }>);
 
-    return events
+    return completedEvents
         .map(event => {
             const payoutInfo = payoutsByEvent[event.id];
             return {
@@ -72,7 +73,7 @@ export function PayoutsReport() {
         })
         .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 
-  }, [events, payouts]);
+  }, [allEvents, allTransactions]);
 
   return (
     <Card>

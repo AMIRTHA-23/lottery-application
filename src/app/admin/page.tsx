@@ -12,14 +12,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function AdminDashboardPage() {
   const firestore = useFirestore();
 
-  // Reactive fetching for all transactions (Collection Group)
+  // Fetch all transactions using Collection Group Query
   const transactionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collectionGroup(firestore, 'transactions'));
   }, [firestore]);
   const { data: allTransactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
-  // Reactive fetching for all users
+  // Fetch all users
   const usersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'users');

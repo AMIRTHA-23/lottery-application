@@ -83,6 +83,7 @@ export function SignUpForm() {
         gender: values.gender,
         referralSource: values.referralSource || '',
         isAgeVerified: values.isAgeVerified,
+        kycStatus: 'Pending',
         registrationDate: new Date().toISOString(),
         status: 'Active',
       });

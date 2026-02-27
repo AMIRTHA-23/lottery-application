@@ -102,6 +102,7 @@ export interface UserProfile {
   referralSource: string;
   registrationDate: string;
   isAgeVerified: boolean;
+  kycStatus: 'Pending' | 'Verified' | 'Rejected';
   status?: 'Active' | 'Frozen';
 }
 

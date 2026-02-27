@@ -50,6 +50,11 @@
           "type": "boolean",
           "description": "Whether the user has confirmed they are over 18."
         },
+        "kycStatus": {
+          "type": "string",
+          "description": "Current verification status.",
+          "enum": ["Pending", "Verified", "Rejected"]
+        },
         "registrationDate": {
           "type": "string",
           "description": "The date the user registered.",
@@ -65,7 +70,8 @@
         "registrationDate",
         "dob",
         "gender",
-        "isAgeVerified"
+        "isAgeVerified",
+        "kycStatus"
       ]
     }
   },

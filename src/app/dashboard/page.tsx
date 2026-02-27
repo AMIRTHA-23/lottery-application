@@ -1,13 +1,13 @@
 'use client';
 
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { collection, query, limit, orderBy } from 'firebase/firestore';
-import type { Wallet, LotteryNumber, Announcement, Transaction } from '@/lib/types';
+import { collection, query, limit, orderBy, doc } from 'firebase/firestore';
+import type { Wallet, LotteryNumber, Announcement, Transaction, UserProfile } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2 } from 'lucide-react';
 import { AddFundsDialog } from '@/components/dashboard/add-funds-dialog';
 import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,10 @@ export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const [isAddFundsOpen, setAddFundsOpen] = useState(false);
+
+  // Fetch User Profile for KYC/Verification status
+  const profileRef = useMemoFirebase(() => firestore && user ? doc(firestore, 'users', user.uid) : null, [firestore, user]);
+  const { data: profile } = useDoc<UserProfile>(profileRef);
 
   // Query for user's wallet
   const walletQuery = useMemoFirebase(() => {
@@ -110,18 +114,27 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome, {user.displayName || 'User'}!
           </h1>
-          <p className="text-muted-foreground">
-            Here's your lottery dashboard. Good luck!
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+             <p className="text-muted-foreground">Here's your lottery dashboard.</p>
+             {profile?.kycStatus === 'Verified' ? (
+                 <Badge variant="success" className="h-5"><ShieldCheck className="h-3 w-3 mr-1" /> Verified</Badge>
+             ) : (
+                 <Badge variant="secondary" className="h-5">KYC Pending</Badge>
+             )}
+          </div>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/play">Play Now</Link>
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" asChild>
+                <Link href="/dashboard/referrals"><Share2 className="mr-2 h-4 w-4" /> Refer Friends</Link>
+            </Button>
+            <Button asChild>
+                <Link href="/dashboard/play">Play Now</Link>
+            </Button>
+        </div>
       </div>
 
       <LiveDrawCarousel />
       
-       {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
             <>
@@ -162,7 +175,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
@@ -235,7 +247,6 @@ export default function DashboardPage() {
             </Card>
         </div>
         
-        {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
              <Card>
                 <CardHeader>
@@ -259,11 +270,26 @@ export default function DashboardPage() {
                     )}
                 </CardContent>
             </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Identity Verification</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                        Status: <span className="font-bold text-foreground capitalize">{profile?.kycStatus || 'Pending'}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        Ensure your profile is complete to avoid payout delays.
+                    </p>
+                    <Button variant="outline" size="sm" className="w-full mt-2" asChild>
+                        <Link href="/dashboard/settings">Manage KYC</Link>
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
       </div>
     </div>
     </>
   );
 }
-
-    

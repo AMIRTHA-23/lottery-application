@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Ticket, Trophy, Wallet, Gamepad2 } from 'lucide-react';
+import { LayoutGrid, Ticket, Trophy, Wallet, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -9,7 +9,7 @@ const navItems = [
   { href: '/dashboard/play', label: 'Play', icon: Ticket },
   { href: '/dashboard/results', label: 'Results', icon: Trophy },
   { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/dashboard/sample-game', label: 'Fun Game', icon: Gamepad2 },
+  { href: '/dashboard/referrals', label: 'Refer', icon: Share2 },
 ];
 
 export function UserAppBottomNav() {

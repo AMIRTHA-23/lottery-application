@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Pencil, ShieldAlert, ShieldCheck, UserCheck, Calendar, Phone, Mail, User } from 'lucide-react';
+import { ArrowLeft, Pencil, ShieldAlert, ShieldCheck, UserCheck, Calendar, Phone, Mail, User, ShieldX, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { AdjustWalletDialog } from '@/components/admin/adjust-wallet-dialog';
@@ -54,6 +54,16 @@ export default function UserDetailPage() {
         description: `User ${user.username} has been ${newStatus.toLowerCase()}.`,
     });
   };
+
+  const updateKycStatus = (newStatus: UserProfile['kycStatus']) => {
+    if (!firestore || !user) return;
+    const userDocRef = doc(firestore, 'users', user.id);
+    updateDocumentNonBlocking(userDocRef, { kycStatus: newStatus });
+    toast({
+        title: `KYC ${newStatus}`,
+        description: `User verification status updated to ${newStatus}.`,
+    });
+  }
 
   const isLoading = isUserLoading || isWalletsLoading;
 
@@ -115,12 +125,9 @@ export default function UserDetailPage() {
             <Badge variant={user.status === 'Frozen' ? 'destructive' : 'success'}>
                 {user.status || 'Active'}
             </Badge>
-            {user.isAgeVerified && (
-                <Badge variant="outline" className="text-success border-success bg-success/5">
-                    <UserCheck className="mr-1 h-3 w-3" />
-                    Verified 18+
-                </Badge>
-            )}
+            <Badge variant={user.kycStatus === 'Verified' ? 'success' : user.kycStatus === 'Rejected' ? 'destructive' : 'secondary'}>
+                KYC: {user.kycStatus || 'Pending'}
+            </Badge>
             <Button variant="outline" size="sm" onClick={handleToggleFreeze}>
                 {user.status === 'Frozen' ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
                 {user.status === 'Frozen' ? 'Unfreeze' : 'Freeze'}
@@ -130,9 +137,19 @@ export default function UserDetailPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>User Profile & Verification</CardTitle>
-            <CardDescription>Full details collected during registration.</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle>User Profile & KYC</CardTitle>
+                <CardDescription>Full details collected during registration.</CardDescription>
+            </div>
+            <div className="flex gap-2">
+                <Button size="sm" variant="success" onClick={() => updateKycStatus('Verified')} disabled={user.kycStatus === 'Verified'}>
+                    <CheckCircle className="mr-1 h-4 w-4" /> Verify
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => updateKycStatus('Rejected')} disabled={user.kycStatus === 'Rejected'}>
+                    <XCircle className="mr-1 h-4 w-4" /> Reject
+                </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -179,6 +196,20 @@ export default function UserDetailPage() {
                         <p className="text-sm">{user.referralSource || 'Direct/Unknown'}</p>
                     </div>
                 </div>
+            </div>
+             <div className="mt-6 pt-6 border-t">
+                <p className="text-sm font-semibold mb-2">Age Verification Status</p>
+                {user.isAgeVerified ? (
+                    <div className="flex items-center gap-2 text-success">
+                        <UserCheck className="h-5 w-5" />
+                        <span>Confirmed 18+ at Signup</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 text-destructive">
+                        <ShieldX className="h-5 w-5" />
+                        <span>Not Verified</span>
+                    </div>
+                )}
             </div>
           </CardContent>
         </Card>

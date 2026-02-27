@@ -18,26 +18,23 @@ export default function AdminDashboardLayout({
 
   useEffect(() => {
     if (isUserLoading) {
-      return; // Wait for user state to be determined
+      return;
     }
 
     if (!user) {
-      // Not logged in, redirect to login page
       router.push('/login');
       return;
     }
 
     if (user.email !== 'admin@example.com') {
-      // Logged in, but not an admin, redirect to user dashboard
       router.push('/dashboard');
     }
   }, [isUserLoading, user, router]);
 
   if (isUserLoading || !user || user.email !== 'admin@example.com') {
-    // Show a loading state or a blank page while redirecting
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading...</p>
+        <p className="text-muted-foreground animate-pulse">Authenticating Admin...</p>
       </div>
     );
   }
@@ -45,13 +42,13 @@ export default function AdminDashboardLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="md:hidden">
-        <AppBottomNav />
-      </div>
+      <AppBottomNav />
       <SidebarInset>
         <div className="flex flex-col min-h-screen">
           <AppHeader />
-          <main className="flex-1 p-4 md:p-6 md:pb-6 pb-24">{children}</main>
+          <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
+            {children}
+          </main>
         </div>
       </SidebarInset>
     </SidebarProvider>

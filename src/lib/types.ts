@@ -97,7 +97,11 @@ export interface UserProfile {
   lastName: string;
   email: string;
   phoneNumber: string;
+  dob: string;
+  gender: string;
+  referralSource: string;
   registrationDate: string;
+  isAgeVerified: boolean;
   status?: 'Active' | 'Frozen';
 }
 

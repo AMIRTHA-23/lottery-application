@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Pencil, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Pencil, ShieldAlert, ShieldCheck, UserCheck, Calendar, Phone, Mail, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { AdjustWalletDialog } from '@/components/admin/adjust-wallet-dialog';
@@ -98,45 +98,96 @@ export default function UserDetailPage() {
     <>
     {user && wallet && <AdjustWalletDialog user={user} wallet={wallet} isOpen={isAdjustWalletOpen} onOpenChange={setAdjustWalletOpen} />}
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" onClick={() => router.push('/admin/users')}>
             <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
             <h1 className="text-3xl font-bold tracking-tight">{user.username}</h1>
-            <p className="text-muted-foreground">{user.email}</p>
+            <div className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="h-3 w-3" />
+                <span className="text-sm">{user.email}</span>
+            </div>
             </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
             <Badge variant={user.status === 'Frozen' ? 'destructive' : 'success'}>
                 {user.status || 'Active'}
             </Badge>
+            {user.isAgeVerified && (
+                <Badge variant="outline" className="text-success border-success bg-success/5">
+                    <UserCheck className="mr-1 h-3 w-3" />
+                    Verified 18+
+                </Badge>
+            )}
             <Button variant="outline" size="sm" onClick={handleToggleFreeze}>
                 {user.status === 'Frozen' ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
-                {user.status === 'Frozen' ? 'Unfreeze Account' : 'Freeze Account'}
+                {user.status === 'Frozen' ? 'Unfreeze' : 'Freeze'}
             </Button>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>User Profile</CardTitle>
+            <CardTitle>User Profile & Verification</CardTitle>
+            <CardDescription>Full details collected during registration.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="font-medium">First Name:</span> <span className="text-muted-foreground">{user.firstName}</span></div>
-            <div className="flex justify-between"><span className="font-medium">Last Name:</span> <span className="text-muted-foreground">{user.lastName}</span></div>
-            <div className="flex justify-between"><span className="font-medium">Phone:</span> <span className="text-muted-foreground">{user.phoneNumber || 'N/A'}</span></div>
-            <div className="flex justify-between"><span className="font-medium">Registered:</span> <span className="text-muted-foreground">{new Date(user.registrationDate).toLocaleDateString()}</span></div>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">Full Name</p>
+                            <p className="text-sm">{user.firstName} {user.lastName}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">Date of Birth</p>
+                            <p className="text-sm">{user.dob || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">Gender</p>
+                            <p className="text-sm capitalize">{user.gender || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">Phone Number</p>
+                            <p className="text-sm">{user.phoneNumber || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-xs font-medium text-muted-foreground">Registration Date</p>
+                            <p className="text-sm">{new Date(user.registrationDate).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-muted-foreground">Referral Source</p>
+                        <p className="text-sm">{user.referralSource || 'Direct/Unknown'}</p>
+                    </div>
+                </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-1">
            <CardHeader>
-            <CardTitle>Wallet</CardTitle>
+            <CardTitle>Wallet Balance</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col justify-center items-center h-[120px]">
              {isWalletsLoading ? (
               <Skeleton className="h-12 w-3/4" />
             ) : wallet ? (
@@ -144,13 +195,13 @@ export default function UserDetailPage() {
                     <p className="text-4xl font-bold">
                         {new Intl.NumberFormat('en-IN', { style: 'currency', currency: wallet.currency || 'INR' }).format(wallet.balance || 0)}
                     </p>
-                    <Button size="sm" className="mt-2" onClick={() => setAdjustWalletOpen(true)}>
+                    <Button size="sm" variant="ghost" className="mt-4" onClick={() => setAdjustWalletOpen(true)}>
                         <Pencil className="mr-2 h-4 w-4" />
-                        Adjust Balance
+                        Manual Adjust
                     </Button>
                 </>
             ) : (
-               <p className="text-muted-foreground">No wallet found for this user.</p>
+               <p className="text-muted-foreground">No wallet found.</p>
             )}
           </CardContent>
         </Card>

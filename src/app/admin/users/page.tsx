@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { UserCheck } from 'lucide-react';
 
 export default function UsersPage() {
   const firestore = useFirestore();
@@ -47,17 +48,17 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+      <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>User Management</CardTitle>
+          <CardTitle>Verified Users</CardTitle>
           <CardDescription>
-            A list of all users in the system. Click on a username to view details.
+            Browse all registered players. Verified accounts (18+) are highlighted.
           </CardDescription>
            <div className="pt-4">
             <Input 
-                placeholder="Search by username or email..."
+                placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="max-w-sm"
@@ -68,9 +69,9 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Username</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Registration Date</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Verification</TableHead>
+                <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -95,17 +96,29 @@ export default function UsersPage() {
               {!isLoading && filteredUsers && filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                       <Link href={`/admin/users/${user.id}`} className="hover:underline text-primary">
-                        {user.username}
+                    <TableCell>
+                       <Link href={`/admin/users/${user.id}`} className="flex flex-col hover:underline">
+                        <span className="font-medium text-primary">{user.username}</span>
+                        <span className="text-xs text-muted-foreground">{user.email}</span>
                       </Link>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
                     <TableCell>
+                        {user.isAgeVerified ? (
+                            <div className="flex items-center gap-1 text-xs text-success font-medium">
+                                <UserCheck className="h-3 w-3" />
+                                18+ Verified
+                            </div>
+                        ) : (
+                            <span className="text-xs text-muted-foreground">Pending</span>
+                        )}
+                    </TableCell>
+                    <TableCell className="text-sm">
                       {new Date(user.registrationDate).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Badge variant="success">Active</Badge>
+                      <Badge variant={user.status === 'Frozen' ? 'destructive' : 'success'}>
+                        {user.status || 'Active'}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))

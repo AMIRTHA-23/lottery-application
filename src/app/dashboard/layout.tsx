@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { UserAppSidebar } from '@/components/layout/user-app-sidebar';
 import { UserAppBottomNav } from '@/components/layout/user-app-bottom-nav';
+import { CartProvider } from '@/components/dashboard/cart-context';
 
 export default function DashboardLayout({
   children,
@@ -42,8 +43,10 @@ export default function DashboardLayout({
       <SidebarInset>
         <div className="flex flex-col min-h-screen">
           <UserAppHeader />
-          <main className="flex-1 bg-muted/20 p-4 md:p-6 pb-24 md:pb-6">
-            {children}
+          <main className="flex-1 bg-muted/20 pb-24 md:pb-6">
+            <CartProvider>
+              {children}
+            </CartProvider>
           </main>
         </div>
       </SidebarInset>

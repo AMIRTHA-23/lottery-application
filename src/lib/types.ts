@@ -76,6 +76,8 @@ export interface LotteryNumber {
   purchaseDate: string;
   unitPrice: number;
   unitsPurchased: number;
+  board?: 'A' | 'B' | 'C' | 'AB' | 'BC' | 'AC' | 'ABC' | 'XABC';
+  agency?: 'Kerala' | 'Dear' | 'Jackpot';
 }
 
 export interface LotteryEvent {
@@ -88,6 +90,7 @@ export interface LotteryEvent {
   gameType: '1D' | '2D' | '3D' | '4D' | 'LuckyDraw';
   unitPrice: number;
   prize?: string;
+  agency?: 'Kerala' | 'Dear' | 'Jackpot';
 }
 
 export interface UserProfile {
@@ -119,4 +122,17 @@ export interface AppSettings {
   prize2D: number;
   prize3D: number;
   prize4D: number;
+}
+
+export interface CartItem {
+  id: string;
+  eventName: string;
+  eventId: string;
+  agency: 'Kerala' | 'Dear' | 'Jackpot';
+  board: string;
+  number: string;
+  unit: number;
+  price: number;
+  amount: number;
+  eventDate: string;
 }

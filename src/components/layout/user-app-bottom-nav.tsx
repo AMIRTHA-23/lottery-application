@@ -1,32 +1,30 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Ticket, Trophy, Wallet, Settings } from 'lucide-react';
+import { Home, Gavel, ScrollText, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', label: 'Home', icon: LayoutGrid },
-  { href: '/dashboard/play', label: 'Play', icon: Ticket },
-  { href: '/dashboard/results', label: 'Results', icon: Trophy },
-  { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/dashboard/settings', label: 'Profile', icon: Settings },
+  { href: '/dashboard', label: 'Home', icon: Home },
+  { href: '/dashboard/play', label: 'Play', icon: Gavel },
+  { href: '/dashboard/results', label: 'Results', icon: ScrollText },
+  { href: '/dashboard/cart', label: 'Cart', icon: ShoppingCart },
 ];
 
 export function UserAppBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around md:hidden z-40 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#FF0055] border-t border-white/20 flex items-center justify-around md:hidden z-50 pb-safe">
       {navItems.map((item) => {
-        const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
+        const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
         return (
           <Link 
             key={item.href} 
             href={item.href} 
-            className="flex flex-col items-center justify-center gap-1 text-muted-foreground flex-1 h-full transition-colors hover:text-primary"
+            className="flex flex-col items-center justify-center gap-1 text-white/70 flex-1 h-full transition-colors hover:text-white"
           >
-            <item.icon className={cn('w-5 h-5 transition-transform', isActive && 'text-primary scale-110')} />
-            <span className={cn('text-[10px] font-medium transition-colors', isActive && 'text-primary')}>{item.label}</span>
+            <item.icon className={cn('w-7 h-7 transition-transform', isActive && 'text-white scale-110')} />
           </Link>
         );
       })}

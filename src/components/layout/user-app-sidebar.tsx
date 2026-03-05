@@ -19,7 +19,8 @@ import {
   BookOpen,
   LifeBuoy,
   Gamepad2,
-  Share2
+  Share2,
+  ScrollText
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -29,6 +30,7 @@ import { useAuth } from '@/firebase';
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/dashboard/play', label: 'Play', icon: Ticket },
+  { href: '/dashboard/tickets', label: 'My Tickets', icon: ScrollText },
   { href: '/dashboard/results', label: 'Results', icon: Trophy },
   { href: '/dashboard/wallet', label: 'Wallet', icon: Wallet },
   { href: '/dashboard/referrals', label: 'Referrals', icon: Share2 },

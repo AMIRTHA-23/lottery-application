@@ -1,12 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Gavel, ScrollText, ShoppingCart } from 'lucide-react';
+import { Home, Gavel, ScrollText, ShoppingCart, Ticket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Home', icon: Home },
   { href: '/dashboard/play', label: 'Play', icon: Gavel },
+  { href: '/dashboard/tickets', label: 'Tickets', icon: Ticket },
   { href: '/dashboard/results', label: 'Results', icon: ScrollText },
   { href: '/dashboard/cart', label: 'Cart', icon: ShoppingCart },
 ];

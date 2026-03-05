@@ -72,12 +72,14 @@ export interface LotteryNumber {
   id: string;
   userId: string;
   lotteryEventId: string;
+  eventName?: string;
   number: string;
   purchaseDate: string;
   unitPrice: number;
   unitsPurchased: number;
   board?: 'A' | 'B' | 'C' | 'AB' | 'BC' | 'AC' | 'ABC' | 'XABC';
   agency?: 'Kerala' | 'Dear' | 'Jackpot';
+  amount?: number;
 }
 
 export interface LotteryEvent {

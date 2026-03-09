@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { UserAppHeader } from '@/components/layout/user-app-header';
-import { Skeleton } from '@/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { UserAppSidebar } from '@/components/layout/user-app-sidebar';
 import { UserAppBottomNav } from '@/components/layout/user-app-bottom-nav';

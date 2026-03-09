@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SalesChart } from '@/components/admin/sales-chart';
 import { CreditCard, Landmark, Users, TrendingUp, ShieldAlert } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {

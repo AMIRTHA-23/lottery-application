@@ -60,6 +60,14 @@ body {
     --border: 217 33% 25%;
     --input: 217 33% 25%;
     --ring: 341 100% 50%;
+    --sidebar-background: 220 40% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 341 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 341 33% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 25%;
+    --sidebar-ring: 341 100% 50%;
   }
 }
 

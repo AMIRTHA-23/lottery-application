@@ -16,16 +16,24 @@ export function UserAppBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#FF0055] border-t border-white/20 flex items-center justify-around md:hidden z-50 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#FF0055] dark:bg-card border-t border-white/20 dark:border-border flex items-center justify-around md:hidden z-50 pb-safe">
       {navItems.map((item) => {
         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
         return (
           <Link 
             key={item.href} 
             href={item.href} 
-            className="flex flex-col items-center justify-center gap-1 text-white/70 flex-1 h-full transition-colors hover:text-white"
+            className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors"
           >
-            <item.icon className={cn('w-7 h-7 transition-transform', isActive && 'text-white scale-110')} />
+            <item.icon 
+              className={cn(
+                'w-7 h-7 transition-all', 
+                isActive 
+                  ? 'text-white dark:text-[#FF0055] scale-110' 
+                  : 'text-white/60 dark:text-muted-foreground hover:text-white dark:hover:text-foreground'
+              )} 
+            />
+            {isActive && <span className="w-1 h-1 rounded-full bg-white dark:bg-[#FF0055] mt-1" />}
           </Link>
         );
       })}

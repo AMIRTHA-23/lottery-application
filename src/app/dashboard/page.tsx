@@ -7,7 +7,7 @@ import type { Wallet, LotteryNumber, Announcement, Transaction, UserProfile } fr
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2, Coins, Star, AlertTriangle } from 'lucide-react';
+import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2, Coins, Star, AlertTriangle, Clock } from 'lucide-react';
 import { AddFundsDialog } from '@/components/dashboard/add-funds-dialog';
 import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';

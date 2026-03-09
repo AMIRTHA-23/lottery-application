@@ -19,18 +19,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('diamond-cart');
-    if (savedCart) {
-      try {
-        setCart(JSON.parse(savedCart));
-      } catch (e) {
-        console.error('Failed to load cart from storage:', e);
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('diamond-cart');
+      if (savedCart) {
+        try {
+          const parsed = JSON.parse(savedCart);
+          if (Array.isArray(parsed)) {
+            setCart(parsed);
+          }
+        } catch (e) {
+          console.error('Failed to load cart from storage:', e);
+        }
       }
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage whenever it changes, but ONLY AFTER loading is complete
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem('diamond-cart', JSON.stringify(cart));
@@ -55,14 +60,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
-      setCart((prev) => prev.filter((item) => {
-        const drawTime = new Date(item.eventDate);
-        if (item.agency === 'Jackpot') {
-          const limit = new Date(drawTime.getTime() - 15 * 60 * 1000);
-          return now < limit;
-        }
-        return now < drawTime;
-      }));
+      setCart((prev) => {
+        const filtered = prev.filter((item) => {
+          try {
+            const drawTime = new Date(item.eventDate);
+            if (isNaN(drawTime.getTime())) return true; // Keep if date is invalid to be safe
+
+            if (item.agency === 'Jackpot') {
+              const limit = new Date(drawTime.getTime() - 15 * 60 * 1000);
+              return now < limit;
+            }
+            return now < drawTime;
+          } catch (e) {
+            return true;
+          }
+        });
+        // Only update state if something was actually filtered to avoid unnecessary saves
+        return filtered.length === prev.length ? prev : filtered;
+      });
     }, 60000);
 
     return () => clearInterval(interval);

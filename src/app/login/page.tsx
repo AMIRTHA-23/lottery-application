@@ -29,7 +29,6 @@ export default function LoginPage() {
          <div className="relative z-20 flex items-center text-lg font-medium">
             <div className="bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/20">
               <span className="text-3xl font-black tracking-tighter uppercase">Diamond Agency</span>
-              <p className="text-xs font-bold opacity-80 tracking-widest mt-1 text-center">INDIA'S TRUSTED PARTNER</p>
             </div>
           </div>
       </div>

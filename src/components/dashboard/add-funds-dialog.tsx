@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import type { Wallet } from '@/lib/types';
-import { useFirestore, updateDocumentNonBlocking, useUser, useCollection, useMemoFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, where, limit, writeBatch } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { doc, collection, query, limit, writeBatch } from 'firebase/firestore';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Coins, Wallet as WalletIcon } from 'lucide-react';
 
 interface AddFundsDialogProps {
   isOpen: boolean;
@@ -18,7 +20,7 @@ interface AddFundsDialogProps {
 }
 
 const addFundsSchema = z.object({
-  amount: z.coerce.number().positive({ message: 'Amount must be positive.' }).min(100, 'Minimum deposit is ₹100.'),
+  amount: z.coerce.number().positive({ message: 'Amount must be positive.' }).min(100, 'Minimum is ₹100.'),
 });
 
 type AddFundsFormValues = z.infer<typeof addFundsSchema>;
@@ -35,30 +37,30 @@ export function AddFundsDialog({ isOpen, onOpenChange }: AddFundsDialogProps) {
   const { data: wallets } = useCollection<Wallet>(walletQuery);
   const wallet = wallets?.[0];
 
-  const form = useForm<AddFundsFormValues>({
+  const balanceForm = useForm<AddFundsFormValues>({
     resolver: zodResolver(addFundsSchema),
-    defaultValues: {
-      amount: 100,
-    },
+    defaultValues: { amount: 500 },
   });
 
-  const onSubmit = async (data: AddFundsFormValues) => {
+  const coinsForm = useForm<AddFundsFormValues>({
+    resolver: zodResolver(addFundsSchema),
+    defaultValues: { amount: 500 },
+  });
+
+  const handleTransaction = async (data: AddFundsFormValues, type: 'Balance' | 'Coins') => {
     if (!firestore || !user) return;
 
     try {
         const batch = writeBatch(firestore);
-
         let walletRef;
-        let currentBalance = 0;
+        let currentBalance = wallet?.balance || 0;
+        let currentCoins = wallet?.specialCoins || 0;
         let walletId: string;
 
         if (wallet) {
-            // Wallet exists
             walletRef = doc(firestore, 'users', user.uid, 'wallets', wallet.id);
-            currentBalance = wallet.balance;
             walletId = wallet.id;
         } else {
-            // Wallet does not exist, create it
             walletRef = doc(collection(firestore, 'users', user.uid, 'wallets'));
             walletId = walletRef.id;
             batch.set(walletRef, {
@@ -66,13 +68,22 @@ export function AddFundsDialog({ isOpen, onOpenChange }: AddFundsDialogProps) {
                 userId: user.uid,
                 balance: 0,
                 currency: 'INR',
+                specialCoins: 0,
+                totalCoinsEarned: 0,
+                level: 1
             });
         }
         
-        // Update balance
-        batch.update(walletRef, { balance: currentBalance + data.amount });
+        if (type === 'Balance') {
+            batch.update(walletRef, { balance: currentBalance + data.amount });
+        } else {
+            const coinsToAdd = data.amount * 10; // Rate: ₹1 = 10 Coins
+            batch.update(walletRef, { 
+                specialCoins: currentCoins + coinsToAdd,
+                totalCoinsEarned: (wallet?.totalCoinsEarned || 0) + coinsToAdd
+            });
+        }
 
-        // Create transaction record
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'wallets', walletId, 'transactions'));
         batch.set(transactionRef, {
             id: transactionRef.id,
@@ -81,64 +92,98 @@ export function AddFundsDialog({ isOpen, onOpenChange }: AddFundsDialogProps) {
             transactionDate: new Date().toISOString(),
             amount: data.amount,
             type: 'Deposit',
-            description: 'Funds deposited to wallet'
+            description: type === 'Balance' ? 'Topped up wallet balance' : `Purchased ${data.amount * 10} Special Coins`
         });
         
         await batch.commit();
 
         toast({
-            title: 'Funds Added',
-            description: `${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(data.amount)} has been added to your wallet.`,
+            title: 'Transaction Successful',
+            description: type === 'Balance' 
+                ? `₹${data.amount} added to your balance.` 
+                : `${data.amount * 10} Special Coins added to your rewards.`,
         });
 
         onOpenChange(false);
-        form.reset();
-
     } catch (e: any) {
-         toast({
-            variant: 'destructive',
-            title: 'Failed to Add Funds',
-            description: e.message || 'An unexpected error occurred.',
-        });
+         toast({ variant: 'destructive', title: 'Error', description: e.message });
     }
-
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Funds to Wallet</DialogTitle>
+          <DialogTitle>Add Funds or Buy Coins</DialogTitle>
           <DialogDescription>
-            Enter the amount you want to deposit. This is a simulation and no real money will be charged.
+            Top up your cash balance or purchase Special Coins to play.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (INR)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="e.g., 500" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Depositing...' : 'Deposit Funds'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+
+        <Tabs defaultValue="balance" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="balance" className="gap-2">
+                <WalletIcon className="h-4 w-4" /> Cash Balance
+            </TabsTrigger>
+            <TabsTrigger value="coins" className="gap-2 text-[#FF0055]">
+                <Coins className="h-4 w-4" /> Buy Coins
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="balance" className="pt-4">
+            <Form {...balanceForm}>
+              <form onSubmit={balanceForm.handleSubmit((d) => handleTransaction(d, 'Balance'))} className="space-y-4">
+                <FormField
+                  control={balanceForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Deposit Amount (₹)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={balanceForm.formState.isSubmitting}>
+                  Add Cash Balance
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="coins" className="pt-4">
+            <Form {...coinsForm}>
+              <form onSubmit={coinsForm.handleSubmit((d) => handleTransaction(d, 'Coins'))} className="space-y-4">
+                <div className="bg-pink-50 p-4 rounded-lg border border-pink-100 mb-4">
+                    <p className="text-xs font-bold text-[#FF0055] uppercase mb-1">Conversion Rate</p>
+                    <p className="text-lg font-black">₹1.00 = 10 Special Coins</p>
+                </div>
+                <FormField
+                  control={coinsForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Purchase Amount (₹)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        You will receive <span className="font-bold text-[#FF0055]">{field.value * 10} Coins</span>
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full bg-[#FF0055] hover:bg-[#D40045]" disabled={coinsForm.formState.isSubmitting}>
+                  Buy Special Coins
+                </Button>
+              </form>
+            </Form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
 }
-
-    

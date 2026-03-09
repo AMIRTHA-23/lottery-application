@@ -73,6 +73,19 @@
         "isAgeVerified",
         "kycStatus"
       ]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "balance": { "type": "number" },
+        "currency": { "type": "string" },
+        "specialCoins": { "type": "number", "description": "Redeemable reward coins." },
+        "totalCoinsEarned": { "type": "number", "description": "Lifetime reward coins for level calculation." },
+        "level": { "type": "number", "description": "User's reward level." }
+      }
     }
   },
   "auth": {
@@ -92,7 +105,7 @@
       "schema": {
         "$ref": "#/entities/Wallet"
       },
-      "description": "User wallet."
+      "description": "User wallet with reward details."
     }
   }
 }

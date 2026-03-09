@@ -55,6 +55,9 @@ export interface Wallet {
   userId: string;
   balance: number;
   currency: string;
+  specialCoins: number;
+  totalCoinsEarned: number;
+  level: number;
 }
 
 export interface Transaction {
@@ -63,7 +66,7 @@ export interface Transaction {
   walletId: string;
   transactionDate: string;
   amount: number;
-  type: 'Deposit' | 'Withdrawal' | 'Purchase' | 'Payout';
+  type: 'Deposit' | 'Withdrawal' | 'Purchase' | 'Payout' | 'Reward' | 'Redemption';
   description: string;
   lotteryEventId?: string;
 }

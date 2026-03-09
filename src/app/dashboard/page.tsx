@@ -7,7 +7,7 @@ import type { Wallet, LotteryNumber, Announcement, Transaction, UserProfile } fr
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2 } from 'lucide-react';
+import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2, Coins, Star } from 'lucide-react';
 import { AddFundsDialog } from '@/components/dashboard/add-funds-dialog';
 import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -78,23 +78,11 @@ export default function DashboardPage() {
 
   const isLoading = isWalletsLoading || isNumbersLoading || isAnnouncementsLoading || isTransactionsLoading;
   
-  const statCards = [
-    {
-        title: "Total Winnings",
-        value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalWinnings),
-        icon: TrendingUp
-    },
-    {
-        title: "Total Spent",
-        value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalSpent),
-        icon: TrendingDown
-    }
-  ]
-  
   const getTransactionBadgeVariant = (type: Transaction['type']) => {
     switch (type) {
       case 'Deposit':
       case 'Payout':
+      case 'Reward':
         return 'success';
       case 'Purchase':
         return 'destructive';
@@ -127,7 +115,7 @@ export default function DashboardPage() {
             <Button variant="outline" asChild>
                 <Link href="/dashboard/referrals"><Share2 className="mr-2 h-4 w-4" /> Refer Friends</Link>
             </Button>
-            <Button asChild>
+            <Button asChild className="bg-[#FF0055] hover:bg-[#D40045]">
                 <Link href="/dashboard/play">Play Now</Link>
             </Button>
         </div>
@@ -135,41 +123,62 @@ export default function DashboardPage() {
 
       <LiveDrawCarousel />
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
             <>
                 <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/><Skeleton className="h-8 w-full mt-2"/></CardContent></Card>
                 <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/></CardContent></Card>
                 <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/></CardContent></Card>
+                <Card><CardHeader><Skeleton className="h-5 w-24"/></CardHeader><CardContent><Skeleton className="h-8 w-32"/></CardContent></Card>
             </>
         ) : (
             <>
-                <Card>
+                <Card className="border-l-4 border-l-[#FF0055]">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
-                        <WalletIcon className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Wallet Balance</CardTitle>
+                        <WalletIcon className="h-4 w-4 text-[#FF0055]" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{wallet ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet.balance) : '₹0.00'}</div>
-                         <div className="flex gap-2 mt-2">
-                            <Button size="sm" onClick={() => setAddFundsOpen(true)}>Add Funds</Button>
-                            <Button size="sm" variant="outline" asChild><Link href="/dashboard/wallet">View History</Link></Button>
+                        <div className="text-2xl font-black">{wallet ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(wallet.balance) : '₹0.00'}</div>
+                         <div className="flex gap-2 mt-3">
+                            <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold border-[#FF0055] text-[#FF0055]" onClick={() => setAddFundsOpen(true)}>Add Funds</Button>
                         </div>
                     </CardContent>
                 </Card>
-                {statCards.map((stat) => (
-                <Card key={stat.title}>
+
+                <Card className="bg-yellow-50 border-yellow-200">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                        {stat.title}
-                    </CardTitle>
-                    <stat.icon className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-xs font-bold uppercase text-yellow-800">Special Coins</CardTitle>
+                        <Coins className="h-4 w-4 text-yellow-600" />
                     </CardHeader>
                     <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
+                        <div className="text-2xl font-black text-yellow-600">{wallet?.specialCoins || 0}</div>
+                        <div className="flex items-center gap-1 mt-2">
+                           <Star className="h-3 w-3 text-yellow-600 fill-yellow-600" />
+                           <span className="text-[10px] font-bold text-yellow-700 uppercase">Level {wallet?.level || 1} Player</span>
+                        </div>
                     </CardContent>
                 </Card>
-                ))}
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Total Winnings</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-black">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalWinnings)}</div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xs font-bold uppercase text-muted-foreground">Total Spent</CardTitle>
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                    </CardHeader>
+                    <CardContent>
+                    <div className="text-2xl font-black">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(stats.totalSpent)}</div>
+                    </CardContent>
+                </Card>
             </>
         )}
       </div>
@@ -192,11 +201,17 @@ export default function DashboardPage() {
                                         <div className="text-xs text-muted-foreground">{new Date(tx.transactionDate).toLocaleString()}</div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={getTransactionBadgeVariant(tx.type)}>{tx.type}</Badge>
+                                        <Badge variant={getTransactionBadgeVariant(tx.type)} className={cn(tx.type === 'Reward' && 'bg-yellow-500 hover:bg-yellow-600')}>
+                                          {tx.type}
+                                        </Badge>
                                     </TableCell>
-                                    <TableCell className={cn("text-right font-semibold", tx.amount > 0 ? 'text-green-500' : 'text-red-500')}>
-                                        {tx.amount > 0 ? '+' : ''}
-                                        {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(tx.amount)}
+                                    <TableCell className={cn("text-right font-bold", tx.type === 'Reward' ? 'text-yellow-600' : tx.amount > 0 ? 'text-green-500' : 'text-red-500')}>
+                                        {tx.type === 'Reward' ? `+${tx.amount} Coins` : (
+                                          <>
+                                            {tx.amount > 0 ? '+' : ''}
+                                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(tx.amount)}
+                                          </>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -238,7 +253,7 @@ export default function DashboardPage() {
                     ) : (
                     <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                         <p className="text-muted-foreground">You haven't purchased any numbers yet.</p>
-                        <Button asChild className="mt-4">
+                        <Button asChild className="mt-4 bg-[#FF0055] hover:bg-[#D40045]">
                         <Link href="/dashboard/play">Buy Your First Number</Link>
                         </Button>
                     </div>
@@ -271,19 +286,28 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
 
-             <Card>
+             <Card className="bg-gradient-to-br from-white to-pink-50">
                 <CardHeader>
-                    <CardTitle>Identity Verification</CardTitle>
+                    <CardTitle className="text-[#FF0055]">VIP Rewards</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                        Status: <span className="font-bold text-foreground capitalize">{profile?.kycStatus || 'Pending'}</span>
+                        Your current level: <span className="font-black text-[#FF0055]">Level {wallet?.level || 1}</span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                        Ensure your profile is complete to avoid payout delays.
-                    </p>
-                    <Button variant="outline" size="sm" className="w-full mt-2" asChild>
-                        <Link href="/dashboard/settings">Manage KYC</Link>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold uppercase">
+                        <span>XP Progress</span>
+                        <span>{wallet ? Math.floor(((wallet.totalCoinsEarned % 1000) / 1000) * 100) : 0}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-pink-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-[#FF0055]" 
+                          style={{ width: `${wallet ? Math.floor(((wallet.totalCoinsEarned % 1000) / 1000) * 100) : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full mt-2 border-[#FF0055] text-[#FF0055] hover:bg-pink-50" asChild>
+                        <Link href="/dashboard/wallet">Reward Details</Link>
                     </Button>
                 </CardContent>
             </Card>

@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { useCart } from '@/components/dashboard/cart-context';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, CheckCircle, Trash2, Home, User, Loader2 } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Trash2, Home, User, Loader2, Coins } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, runTransaction, collection, query, limit } from 'firebase/firestore';
 import type { Wallet } from '@/lib/types';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function CartPage() {
   const { cart, totalAmount, clearCart, removeFromCart } = useCart();
@@ -17,8 +19,9 @@ export default function CartPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [useSpecialCoins, setUseSpecialCoins] = useState(false);
 
-  // Fetch Wallet to verify balance
+  // Fetch Wallet to verify balance and coins
   const walletQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'users', user.uid, 'wallets'), limit(1));
@@ -26,13 +29,22 @@ export default function CartPage() {
   const { data: wallets, isLoading: isWalletLoading } = useCollection<Wallet>(walletQuery);
   const wallet = wallets?.[0];
 
+  // Redemption logic: 100 coins = ₹1
+  const redemptionValue = wallet ? Math.floor(wallet.specialCoins / 100) : 0;
+  const appliedDiscount = useSpecialCoins ? Math.min(redemptionValue, totalAmount) : 0;
+  const finalPayable = totalAmount - appliedDiscount;
+  const coinsToRedeem = appliedDiscount * 100;
+
+  // Earning logic: 1 coin per ₹10 spent
+  const coinsEarned = Math.floor(totalAmount / 10);
+
   const handleCheckout = async () => {
     if (!user || !firestore || cart.length === 0 || !wallet) return;
 
-    if (wallet.balance < totalAmount) {
+    if (wallet.balance < finalPayable) {
       toast({ 
         title: "Insufficient Balance", 
-        description: `You need ₹${(totalAmount - wallet.balance).toFixed(2)} more.`, 
+        description: `You need ₹${(finalPayable - wallet.balance).toFixed(2)} more.`, 
         variant: 'destructive' 
       });
       return;
@@ -43,24 +55,45 @@ export default function CartPage() {
       await runTransaction(firestore, async (transaction) => {
         const walletRef = doc(firestore, 'users', user.uid, 'wallets', wallet.id);
         
-        // 1. Update Wallet Balance
+        const newSpecialCoins = (wallet.specialCoins || 0) - coinsToRedeem + coinsEarned;
+        const newTotalEarned = (wallet.totalCoinsEarned || 0) + coinsEarned;
+        const newLevel = Math.floor(newTotalEarned / 1000) + 1;
+
+        // 1. Update Wallet (Balance, Coins, Level)
         transaction.update(walletRef, {
-          balance: wallet.balance - totalAmount
+          balance: wallet.balance - finalPayable,
+          specialCoins: newSpecialCoins,
+          totalCoinsEarned: newTotalEarned,
+          level: newLevel
         });
 
-        // 2. Record Transaction
+        // 2. Record Main Transaction
         const transactionRef = doc(collection(firestore, 'users', user.uid, 'wallets', wallet.id, 'transactions'));
         transaction.set(transactionRef, {
           id: transactionRef.id,
           userId: user.uid,
           walletId: wallet.id,
           transactionDate: new Date().toISOString(),
-          amount: -totalAmount,
+          amount: -finalPayable,
           type: 'Purchase',
-          description: `Purchase of ${cart.length} tickets`
+          description: `Purchase of ${cart.length} tickets${appliedDiscount > 0 ? ` (₹${appliedDiscount} discount from coins)` : ''}`
         });
 
-        // 3. Record Lottery Numbers
+        // 3. Record Coin Reward Transaction
+        if (coinsEarned > 0) {
+          const rewardTxRef = doc(collection(firestore, 'users', user.uid, 'wallets', wallet.id, 'transactions'));
+          transaction.set(rewardTxRef, {
+            id: rewardTxRef.id,
+            userId: user.uid,
+            walletId: wallet.id,
+            transactionDate: new Date().toISOString(),
+            amount: coinsEarned,
+            type: 'Reward',
+            description: `Earned ${coinsEarned} Special Coins from purchase`
+          });
+        }
+
+        // 4. Record Lottery Numbers
         cart.forEach(item => {
           const numberRef = doc(collection(firestore, 'users', user.uid, 'lotteryNumbers'));
           transaction.set(numberRef, {
@@ -79,9 +112,12 @@ export default function CartPage() {
         });
       });
 
-      toast({ title: "Purchase Confirmed!", description: "Good luck with your tickets." });
+      toast({ 
+        title: "Purchase Confirmed!", 
+        description: `Paid ₹${finalPayable.toFixed(2)} and earned ${coinsEarned} coins.` 
+      });
       clearCart();
-      router.push('/dashboard/results');
+      router.push('/dashboard/tickets');
     } catch (e: any) {
       toast({ title: "Checkout Failed", description: e.message, variant: 'destructive' });
     } finally {
@@ -112,6 +148,29 @@ export default function CartPage() {
         <Button className="w-full bg-[#FF0055] hover:bg-[#D40045] font-bold text-lg py-6 rounded-xl pointer-events-none">
           <ShoppingCart className="mr-2" /> Your Shopping Cart
         </Button>
+
+        {/* Reward Redemption UI */}
+        {wallet && wallet.specialCoins >= 100 && (
+          <div className="bg-white p-4 rounded-xl border border-dashed border-[#FF0055] flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="bg-yellow-100 p-2 rounded-full">
+                <Coins className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">Use Special Coins</p>
+                <p className="text-xs text-muted-foreground">You have {wallet.specialCoins} coins (₹{redemptionValue} available)</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="use-coins" 
+                checked={useSpecialCoins} 
+                onCheckedChange={setUseSpecialCoins}
+              />
+              <Label htmlFor="use-coins" className="text-xs font-bold text-[#FF0055]">APPLY</Label>
+            </div>
+          </div>
+        )}
 
         {/* The Diamond Table */}
         <div className="bg-white p-2 rounded-lg border-2 border-[#FF0055] shadow-xl">
@@ -162,12 +221,27 @@ export default function CartPage() {
                   </td>
                 </tr>
               )}
+              {appliedDiscount > 0 && (
+                 <tr className="text-sm italic text-green-600 bg-green-50">
+                   <td colSpan={3} className="text-right">Special Coins Redemption ({coinsToRedeem} coins):</td>
+                   <td colSpan={2} className="text-right font-bold">-₹{appliedDiscount.toFixed(2)}</td>
+                 </tr>
+              )}
               <tr className="font-bold text-lg bg-pink-50">
                 <td colSpan={3} className="text-right text-[#FF0055] p-4">TOTAL PAYABLE AMOUNT:</td>
-                <td colSpan={2} className="text-right text-[#FF0055] p-4 border-l-2 border-[#FF0055]">₹{totalAmount.toFixed(2)}</td>
+                <td colSpan={2} className="text-right text-[#FF0055] p-4 border-l-2 border-[#FF0055]">₹{finalPayable.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
+          
+          <div className="p-3 bg-yellow-50 mt-2 rounded border border-yellow-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Coins className="h-4 w-4 text-yellow-600" />
+              <p className="text-[10px] text-yellow-800 font-bold uppercase">Estimated Rewards for this purchase:</p>
+            </div>
+            <p className="text-xs font-bold text-yellow-700">{coinsEarned} Coins</p>
+          </div>
+
           <div className="p-3 bg-red-50 mt-2 rounded border border-red-100">
             <p className="text-[10px] text-red-600 italic">
               ** IMPORTANT: Lottery tickets are subject to availability. jackpot lots must be purchased at least 15 minutes before draw time.

@@ -37,19 +37,19 @@ export default function DashboardLayout({
   }
 
   return (
-     <SidebarProvider>
-      <UserAppSidebar />
-      <UserAppBottomNav />
-      <SidebarInset>
-        <div className="flex flex-col min-h-screen">
-          <UserAppHeader />
-          <main className="flex-1 bg-muted/20 pb-24 md:pb-6">
-            <CartProvider>
+    <CartProvider>
+      <SidebarProvider>
+        <UserAppSidebar />
+        <UserAppBottomNav />
+        <SidebarInset>
+          <div className="flex flex-col min-h-screen">
+            <UserAppHeader />
+            <main className="flex-1 bg-muted/20 pb-24 md:pb-6">
               {children}
-            </CartProvider>
-          </main>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+            </main>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </CartProvider>
   );
 }

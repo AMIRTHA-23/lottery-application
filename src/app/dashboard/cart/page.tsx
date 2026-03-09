@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '@/components/dashboard/cart-context';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,12 @@ export default function CartPage() {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [useSpecialCoins, setUseSpecialCoins] = useState(false);
+  const [today, setToday] = useState<string>('');
+
+  // Handle hydration mismatch for dates
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString());
+  }, []);
 
   // Fetch Wallet to verify balance and coins
   const walletQuery = useMemoFirebase(() => {
@@ -125,8 +131,6 @@ export default function CartPage() {
     }
   };
 
-  const today = new Date().toLocaleDateString();
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center">
       {/* Custom Header matching Diamond Agency branding */}
@@ -178,7 +182,7 @@ export default function CartPage() {
             <thead>
               <tr className="bg-gray-50">
                 <td colSpan={3} className="font-semibold text-[#FF0055]">Name: {user?.displayName || 'Player'}</td>
-                <td colSpan={2} className="text-right font-semibold">Date: {today}</td>
+                <td colSpan={2} className="text-right font-semibold">Date: {today || 'Loading...'}</td>
               </tr>
               <tr className="font-bold text-center bg-pink-50 text-[#FF0055]">
                 <td>Lot Details</td>

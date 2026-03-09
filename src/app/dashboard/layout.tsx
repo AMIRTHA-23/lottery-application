@@ -26,7 +26,7 @@ export default function DashboardLayout({
 
   const content = (isUserLoading || !user) ? (
     <div className="flex h-screen w-full items-center justify-center">
-      <div className="flex flex-col items-center gap-4 w-full max-sm p-4">
+      <div className="flex flex-col items-center gap-4 w-full max-w-sm p-4">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-48 w-full" />
           <Skeleton className="h-24 w-full" />

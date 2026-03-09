@@ -7,7 +7,7 @@ import type { Wallet, LotteryNumber, Announcement, Transaction, UserProfile } fr
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2, Coins, Star } from 'lucide-react';
+import { Megaphone, Wallet as WalletIcon, TrendingUp, TrendingDown, ShieldCheck, Share2, Coins, Star, AlertTriangle } from 'lucide-react';
 import { AddFundsDialog } from '@/components/dashboard/add-funds-dialog';
 import { useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -107,7 +107,7 @@ export default function DashboardPage() {
              {profile?.kycStatus === 'Verified' ? (
                  <Badge variant="success" className="h-5"><ShieldCheck className="h-3 w-3 mr-1" /> Verified</Badge>
              ) : (
-                 <Badge variant="secondary" className="h-5">KYC Pending</Badge>
+                 <Badge variant="secondary" className="h-5">{profile?.kycStatus === 'Pending' ? 'Verification Pending' : 'KYC Required'}</Badge>
              )}
           </div>
         </div>
@@ -120,6 +120,35 @@ export default function DashboardPage() {
             </Button>
         </div>
       </div>
+
+      {profile?.kycStatus !== 'Verified' && profile?.kycStatus !== 'Pending' && (
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="font-bold text-red-800">Account Not Verified</p>
+                <p className="text-xs text-red-700">Complete your KYC to unlock higher payouts and VIP rewards.</p>
+              </div>
+            </div>
+            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white shrink-0" asChild>
+              <Link href="/dashboard/settings">Complete KYC</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {profile?.kycStatus === 'Pending' && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="py-4 flex items-center gap-3">
+            <Clock className="h-5 w-5 text-yellow-600" />
+            <div>
+              <p className="font-bold text-yellow-800">Verification in Progress</p>
+              <p className="text-xs text-yellow-700">Our team is reviewing your profile. You'll be notified once verified.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <LiveDrawCarousel />
       

@@ -53,12 +53,17 @@
         "kycStatus": {
           "type": "string",
           "description": "Current verification status.",
-          "enum": ["Pending", "Verified", "Rejected"]
+          "enum": ["Not Submitted", "Pending", "Verified", "Rejected"]
         },
         "registrationDate": {
           "type": "string",
           "description": "The date the user registered.",
           "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Account status.",
+          "enum": ["Active", "Frozen"]
         }
       },
       "required": [

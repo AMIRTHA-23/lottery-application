@@ -21,16 +21,20 @@ import {
   Gamepad2,
   Share2,
   ScrollText,
-  Star
+  Star,
+  ShoppingCart
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
+import { useCart } from '@/components/dashboard/cart-context';
+import { Badge } from '@/components/ui/badge';
 
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
   { href: '/dashboard/play', label: 'Play', icon: Ticket },
+  { href: '/dashboard/cart', label: 'Cart', icon: ShoppingCart },
   { href: '/dashboard/tickets', label: 'My Tickets', icon: ScrollText },
   { href: '/dashboard/rewards', label: 'Special Coins', icon: Star },
   { href: '/dashboard/results', label: 'Results', icon: Trophy },
@@ -45,6 +49,8 @@ export function UserAppSidebar() {
   const pathname = usePathname();
   const auth = useAuth();
   const router = useRouter();
+  const { cart } = useCart();
+  const cartCount = cart.length;
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -67,9 +73,14 @@ export function UserAppSidebar() {
                 isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')}
                 tooltip={item.label}
               >
-                <Link href={item.href}>
+                <Link href={item.href} className="flex items-center w-full">
                   <item.icon />
                   <span>{item.label}</span>
+                  {item.label === 'Cart' && cartCount > 0 && (
+                    <Badge className="ml-auto bg-[#FF0055] text-white hover:bg-[#FF0055]/90">
+                      {cartCount}
+                    </Badge>
+                  )}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

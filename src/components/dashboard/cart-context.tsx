@@ -15,6 +15,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem('diamond-cart');
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error('Failed to load cart from storage:', e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('diamond-cart', JSON.stringify(cart));
+    }
+  }, [cart, isLoaded]);
 
   const addToCart = (item: CartItem) => {
     setCart((prev) => [...prev, item]);
@@ -37,9 +58,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setCart((prev) => prev.filter((item) => {
         const drawTime = new Date(item.eventDate);
         if (item.agency === 'Jackpot') {
-          // Can buy up to 15 mins after lot time for some, 
-          // but usually restricted 15 mins before for fairness.
-          // Applying logic: remove if draw is less than 15 mins away.
           const limit = new Date(drawTime.getTime() - 15 * 60 * 1000);
           return now < limit;
         }

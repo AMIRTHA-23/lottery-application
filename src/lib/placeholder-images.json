@@ -23,6 +23,12 @@
       "description": "Live Draw Event placeholder 3",
       "imageUrl": "https://images.unsplash.com/photo-1763355709931-77776a864a70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3aW5uaW5nJTIwdGlja2V0fGVufDB8fHx8MTc3MTU5MDc1OHww&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "winning ticket"
+    },
+    {
+      "id": "login-bg",
+      "description": "Lottery themed background for login page",
+      "imageUrl": "https://picsum.photos/seed/diamond-lotto-login/1080/1920",
+      "imageHint": "lottery balls"
     }
   ]
 }

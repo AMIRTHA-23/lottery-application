@@ -11,11 +11,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, PartyPopper, ShoppingCart, Info, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { PartyPopper, ShoppingCart, Info, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState } from 'react';
 import { NumberInput } from '@/components/dashboard/number-input';
-import { generateLuckyNumber } from '@/ai/flows/generate-lucky-number';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCart } from '@/components/dashboard/cart-context';
@@ -36,7 +35,6 @@ export default function PlayEventPage() {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
-  const [isPicking, setIsPicking] = useState(false);
   const [activeTab, setActiveTab] = useState('1D');
 
   const eventRef = useMemoFirebase(() => {
@@ -69,30 +67,6 @@ export default function PlayEventPage() {
     if (board === 'ABC') return 12; 
     if (board === 'XABC') return 20;
     return event?.unitPrice || 10;
-  };
-
-  const handleQuickPick = async () => {
-    if (!user) return;
-    const board = form.getValues('board');
-    if (!board) {
-      toast({ title: "Select a board first", variant: 'destructive' });
-      return;
-    }
-    setIsPicking(true);
-    try {
-      const result = await generateLuckyNumber({
-        userName: user.displayName || 'player',
-        gameType: activeTab as any,
-      });
-      if (result.luckyNumber) {
-        const cleanNum = result.luckyNumber.replace(/\D/g, '').slice(0, board.length);
-        form.setValue('number', cleanNum, { shouldValidate: true });
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsPicking(false);
-    }
   };
 
   const onAddToCart = (data: PurchaseFormValues) => {
@@ -208,13 +182,6 @@ export default function PlayEventPage() {
                         </FormItem>
                         )}
                     />
-
-                    <div className="flex justify-center">
-                        <Button type="button" variant="outline" className="border-[#FF0055] text-[#FF0055] hover:bg-pink-50 font-bold" onClick={handleQuickPick} disabled={isPicking}>
-                        <Wand2 className="mr-2 h-4 w-4" />
-                        {isPicking ? 'Consulting Oracle...' : 'Quick Pick'}
-                        </Button>
-                    </div>
                   </div>
 
                   <div className="space-y-4">
